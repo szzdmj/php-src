@@ -79,4 +79,3 @@ steps:
     with:
       name: wasmphp
       path: dist/
-Update deploy.yml
