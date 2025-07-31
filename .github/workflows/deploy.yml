@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted  # 使用自建 Runner，确保标签配置匹配你的 Runner
 
     steps:
       - name: Checkout repo
