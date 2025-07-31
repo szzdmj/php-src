@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # 加上手动触发，方便测试和调试
+  workflow_dispatch:  # 支持手动触发，便于调试
 
 jobs:
   build-and-deploy:
@@ -15,31 +15,29 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup Emscripten
-        uses: emscripten-core/setup-emsdk@v2
+        uses: mymindstorm/setup-emsdk@v14
         with:
-          emsdk-version: latest
+          version: latest
 
       - name: Install dependencies
-  run: |
-    sudo apt-get update
-    sudo apt-get install -y autoconf bison re2c libxml2-dev libsqlite3-dev libzip-dev libssl-dev unzip pkg-config
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf bison re2c libxml2-dev libsqlite3-dev libzip-dev libssl-dev unzip pkg-config
 
-    - name: Setup PHP build
-         run: |
-    ./buildconf
-    emconfigure ./configure --disable-all --enable-cli
-    emmake make -j$(nproc)
+      - name: Setup PHP build
+        run: |
+          ./buildconf
+          emconfigure ./configure --disable-all --enable-cli
+          emmake make -j$(nproc)
 
-     - name: Copy wasm
-      run: |
-    mkdir -p dist
-    cp sapi/cli/php dist/php.wasm
-
+      - name: Copy wasm output
+        run: |
+          mkdir -p dist
+          cp sapi/cli/php dist/php.wasm
 
       - name: Install Wrangler
         run: npm install -g wrangler@4.26.1
 
       - name: Deploy to Cloudflare Workers
         env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-        run: wrangler publish --api-token $CF_API_TOKEN
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN
