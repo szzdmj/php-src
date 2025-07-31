@@ -19,16 +19,22 @@ jobs:
         with:
           emsdk-version: latest
 
-      - name: Build PHP WASM
-        run: |
-          mkdir -p dist
-          emcc src/php.c \
-            -o dist/php-wasm.js \
-            -s WASM=1 \
-            -s MODULARIZE=1 \
-            -s EXPORT_NAME='createPHPModule' \
-            -O3 \
-            --closure 1
+      - name: Install dependencies
+  run: |
+    sudo apt-get update
+    sudo apt-get install -y autoconf bison re2c libxml2-dev libsqlite3-dev libzip-dev libssl-dev unzip pkg-config
+
+    - name: Setup PHP build
+         run: |
+    ./buildconf
+    emconfigure ./configure --disable-all --enable-cli
+    emmake make -j$(nproc)
+
+     - name: Copy wasm
+      run: |
+    mkdir -p dist
+    cp sapi/cli/php dist/php.wasm
+
 
       - name: Install Wrangler
         run: npm install -g wrangler@4.26.1
