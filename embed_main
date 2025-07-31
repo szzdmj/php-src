@@ -1,0 +1,12 @@
+#include <php_embed.h>
+#include <stdio.h>
+
+int main(int argc, char **argv) {
+PHP_EMBED_START_BLOCK(argc, argv);
+
+// 你可以根据实际需要传入 PHP 脚本路径或代码
+zend_eval_string("echo '✅ Hello from PHP WASM';", NULL, "embedded_code");
+
+PHP_EMBED_END_BLOCK();
+return 0;
+}
