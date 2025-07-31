@@ -8,8 +8,7 @@ workflow_dispatch:
 jobs:
 build-and-deploy:
 runs-on: [self-hosted, Linux, x64]
-
-    steps:
+steps:
   - name: Checkout source
     uses: actions/checkout@v4
 
