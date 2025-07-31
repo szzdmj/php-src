@@ -12,29 +12,81 @@ jobs:
     runs-on: [self-hosted, Linux, x64]
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+  - name: Checkout source
+    uses: actions/checkout@v4
 
-      - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: latest
+  - name: Install build dependencies
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y \
+        build-essential \
+        cmake \
+        python3 \
+        curl \
+        git \
+        autoconf \
+        bison \
+        re2c \
+        libxml2-dev \
+        libsqlite3-dev \
+        libcurl4-openssl-dev \
+        pkg-config \
+        libssl-dev
 
-      - name: Build PHP WASM
-        run: |
-          mkdir -p dist
-          emcc src/php.c \
-            -o dist/php-wasm.js \
-            -s WASM=1 \
-            -s MODULARIZE=1 \
-            -s EXPORT_NAME='createPHPModule' \
-            -O3 \
-            --closure 1
+  - name: Set up Emscripten SDK
+    run: |
+      git clone https://github.com/emscripten-core/emsdk.git
+      cd emsdk
+      ./emsdk install latest
+      ./emsdk activate latest
+      echo "source $(pwd)/emsdk_env.sh" >> $GITHUB_ENV
 
-      - name: Install Wrangler
-        run: npm install -g wrangler@4.26.1
+  - name: Load Emscripten env
+    run: |
+      source emsdk/emsdk_env.sh
+      echo "EMSDK_ENV=$PWD/emsdk/emsdk_env.sh" >> $GITHUB_ENV
 
-      - name: Deploy to Cloudflare Workers
-        env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-        run: wrangler publish --api-token $CF_API_TOKEN
+  - name: Clean previous builds
+    run: |
+      git clean -xfd || true
+      make clean || true
+
+  - name: Prepare build system (buildconf)
+    run: |
+      source "$EMSDK_ENV"
+      ./buildconf --force
+
+  - name: Configure PHP with Emscripten
+    run: |
+      source "$EMSDK_ENV"
+      emconfigure ./configure \
+        --disable-all \
+        --without-pear \
+        --enable-session \
+        --enable-mbstring \
+        --with-curl \
+        --without-libxml \
+        --disable-cli
+
+  - name: Compile PHP to WASM
+    run: |
+      source "$EMSDK_ENV"
+      emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
+
+  - name: Package output into worker.js
+    run: |
+      mkdir -p dist
+      WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
+      if [ ! -f "$WASM_FILE" ]; then echo "No .wasm file found!" && exit 1; fi
+      base64 "$WASM_FILE" > dist/php.wasm.base64
+      echo "// Minimal Cloudflare Worker" > dist/worker.js
+      echo "const wasmBase64 = \`$(cat dist/php.wasm.base64)\`;" >> dist/worker.js
+      echo 'addEventListener("fetch", event => {' >> dist/worker.js
+      echo '  event.respondWith(new Response("PHP WASM Ready"))' >> dist/worker.js
+      echo '});' >> dist/worker.js
+
+  - name: Upload artifact
+    uses: actions/upload-artifact@v4
+    with:
+      name: wasmphp
+      path: dist/
