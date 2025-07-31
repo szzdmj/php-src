@@ -4,10 +4,11 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:  # 加上手动触发，方便测试和调试
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted  # 使用自建 Runner，确保标签配置匹配你的 Runner
+    runs-on: [self-hosted, Linux, x64]
 
     steps:
       - name: Checkout repo
