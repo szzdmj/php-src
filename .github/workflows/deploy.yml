@@ -12,28 +12,24 @@ jobs:
    - name: Checkout source
      uses: actions/checkout@v4
    - name: Set up Emscripten SDK
-     run: |
-      name: Set up Emscripten SDK
 run: |
     git clone https://github.com/emscripten-core/emsdk.git
     cd emsdk
     ./emsdk install latest
     ./emsdk activate latest
-
     - name: Export Emscripten env variables for later steps
-shell: bash
+     shell: bash
+      run: |
+         echo "EMSDK_ENV=$GITHUB_WORKSPACE/emsdk/emsdk_env.sh" >> $GITHUB_ENV
+     - name: Clean previous builds
      run: |
-       echo "EMSDK_ENV=$GITHUB_WORKSPACE/emsdk/emsdk_env.sh" >> $GITHUB_ENV
+      git clean -xfd || true
+      make clean || true
 
-  - name: Clean previous builds
-run: |
-git clean -xfd || true
-make clean || true
-
-- name: Generate configure script
-run: |
-source "$EMSDK_ENV"
-./buildconf --force   - name: Configure PHP with Emscripten
+    - name: Generate configure script
+     run: |
+     source "$EMSDK_ENV"
+     ./buildconf --force   - name: Configure PHP with Emscripten
      run: |
       source "$EMSDK_ENV"
       emconfigure ./configure \
@@ -44,11 +40,11 @@ source "$EMSDK_ENV"
         --with-curl \
         --without-libxml \
         --disable-cli
-   - name: Compile PHP to WASM
+    - name: Compile PHP to WASM
      run: |
       source "$EMSDK_ENV"
       emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
-   - name: Package output into worker.js
+    - name: Package output into worker.js
      run: |
       mkdir -p dist
       WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
@@ -59,7 +55,7 @@ source "$EMSDK_ENV"
       echo 'addEventListener("fetch", event => {' >> dist/worker.js
       echo '  event.respondWith(new Response("PHP WASM Ready"))' >> dist/worker.js
       echo '});' >> dist/worker.js
-   - name: Upload artifact
+    - name: Upload artifact
      uses: actions/upload-artifact@v4
      with:
       name: wasmphp
