@@ -41,7 +41,13 @@ jobs:
       --enable-mbstring
       --disable-libxml
       --disable-cli
-      --with-curl
+      --without-curl
+      --disable-dom
+      --disable-simplexml
+      --disable-xml
+      --disable-xmlreader
+      --disable-xmlwriter
+      --disable-libxml
       --enable-json
       --enable-tokenizer
       --enable-filter
