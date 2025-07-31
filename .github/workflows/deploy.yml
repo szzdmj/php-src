@@ -48,6 +48,15 @@ jobs:
       --disable-xmlreader
       --disable-xmlwriter
       --disable-libxml
+      --disable-xsl \
+      --disable-tokenizer \
+      --disable-mbstring \
+      --disable-session \
+      --disable-json \
+      --disable-filter \
+      --disable-hash \
+      --disable-posix \
+      --disable-curl
       --enable-json
       --enable-tokenizer
       --enable-filter
