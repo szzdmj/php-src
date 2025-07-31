@@ -7,43 +7,38 @@ on:
       - master
 
 jobs:
-  build-php-wasm:
+  build:
     runs-on: [self-hosted, Linux, x64]
 
     steps:
-      - name: Checkout PHP source
-        uses: actions/checkout@v3
-
-      - name: Setup Emscripten
-        uses: emscripten-core/setup-emsdk@v2
-        with:
-          emsdk-version: latest
-
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y autoconf bison re2c libxml2-dev \
-            libsqlite3-dev libzip-dev libssl-dev unzip pkg-config
+            libsqlite3-dev libzip-dev libssl-dev unzip pkg-config git
 
-      - name: Prepare PHP build
+      - name: Clone php-src with submodules
         run: |
+          git clone --recursive https://github.com/php/php-src.git php-src
+          cd php-src
           ./buildconf || true
-          emconfigure ./configure \
-            --disable-all \
-            --enable-cli \
-            --without-pear \
-            --disable-libxml \
-            --disable-opcache \
-            --disable-dom \
-            --disable-phar \
-            --disable-simplexml \
-            --disable-tokenizer
 
-      - name: Build PHP with Emscripten
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Configure PHP with Emscripten
+        working-directory: ./php-src
+        run: |
+          emconfigure ./configure --disable-all --enable-cli
+
+      - name: Build PHP with emmake
+        working-directory: ./php-src
         run: |
           emmake make -j$(nproc)
 
-      - name: Copy WASM output
+      - name: Save PHP WASM output
         run: |
           mkdir -p dist
-          cp sapi/cli/php dist/php.wasm
+          cp php-src/sapi/cli/php dist/php.wasm
