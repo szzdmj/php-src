@@ -1,44 +1,39 @@
-name: Build PHP WASM
+name: Build PHP to WebAssembly
 
 on:
-  workflow_dispatch:
   push:
     branches:
-      - master
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: [self-hosted, Linux, x64]
 
     steps:
-      - name: Install dependencies
-        run: |
-          apt-get update
-          apt-get install -y autoconf bison re2c libxml2-dev \
-            libsqlite3-dev libzip-dev libssl-dev unzip pkg-config git
-
-      - name: Clone php-src with submodules
-        run: |
-          git clone --recursive https://github.com/php/php-src.git php-src
-          cd php-src
-          ./buildconf || true
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
       - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v14
+        uses: emscripten-core/setup-emsdk@v2
         with:
-          version: latest
+          emsdk-version: latest
 
-      - name: Configure PHP with Emscripten
-        working-directory: ./php-src
+      - name: Prepare PHP build
         run: |
+          ./buildconf
           emconfigure ./configure --disable-all --enable-cli
-
-      - name: Build PHP with emmake
-        working-directory: ./php-src
-        run: |
           emmake make -j$(nproc)
 
-      - name: Save PHP WASM output
+      - name: Copy php.wasm
         run: |
           mkdir -p dist
-          cp php-src/sapi/cli/php dist/php.wasm
+          cp sapi/cli/php dist/php.wasm
+
+      - name: Install Wrangler
+        run: npm install -g wrangler@4.26.1
+
+      - name: Deploy to Cloudflare Workers
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: wrangler publish --api-token $CF_API_TOKEN
