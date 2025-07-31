@@ -32,38 +32,28 @@ jobs:
       ./buildconf --force
      
    - name: Configure PHP with Emscripten
+     continue-on-error: true
      run: |
       source "$EMSDK_ENV"
-      continue-on-error: true
       emconfigure ./configure
       --disable-all
       --without-pear
-      --enable-session
-      --enable-mbstring
-      --disable-libxml
       --disable-cli
-      --without-curl
+      --disable-libxml
+      --disable-curl
       --disable-dom
       --disable-simplexml
       --disable-xml
       --disable-xmlreader
       --disable-xmlwriter
-      --disable-libxml
-      --disable-xsl \
-      --disable-tokenizer \
-      --disable-mbstring \
-      --disable-session \
-      --disable-json \
-      --disable-filter \
-      --disable-hash \
-      --disable-posix \
-      --disable-curl
+      --disable-xsl
+      --enable-session
+      --enable-mbstring
       --enable-json
       --enable-tokenizer
       --enable-filter
       --enable-hash
       --enable-posix
-      continue-on-error: true
 
    - name: Show config.log if configure fails
      if: failure()
