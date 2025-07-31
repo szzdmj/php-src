@@ -39,9 +39,16 @@ jobs:
         --without-pear \
         --enable-session \
         --enable-mbstring \
+        --disable-libxml \
+        --disable-cli \
         --with-curl \
-        --without-libxml \
-        --disable-cli
+        --enable-mbstring \
+        --enable-session \
+        --enable-json \
+        --enable-tokenizer \
+        --enable-filter \
+        --enable-hash \
+        --enable-posix
    - name: Compile PHP to WASM
      run: |
       source "$EMSDK_ENV"
