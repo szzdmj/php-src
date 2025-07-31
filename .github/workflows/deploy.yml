@@ -13,24 +13,27 @@ jobs:
      uses: actions/checkout@v4
    - name: Set up Emscripten SDK
      run: |
-      git clone https://github.com/emscripten-core/emsdk.git
-      cd emsdk
-      ./emsdk install latest
-      ./emsdk activate latest
-      echo "source $(pwd)/emsdk_env.sh" >> $GITHUB_ENV
-   - name: Load Emscripten env
+      name: Set up Emscripten SDK
+run: |
+    git clone https://github.com/emscripten-core/emsdk.git
+    cd emsdk
+    ./emsdk install latest
+    ./emsdk activate latest
+
+    - name: Export Emscripten env variables for later steps
+shell: bash
      run: |
-      source emsdk/emsdk_env.sh
-      echo "EMSDK_ENV=$PWD/emsdk/emsdk_env.sh" >> $GITHUB_ENV
-   - name: Clean previous builds
-     run: |
-      git clean -xfd || true
-      make clean || true
-   - name: Prepare build system (buildconf)
-     run: |
-      source "$EMSDK_ENV"
-      ./buildconf --force
-   - name: Configure PHP with Emscripten
+       echo "EMSDK_ENV=$GITHUB_WORKSPACE/emsdk/emsdk_env.sh" >> $GITHUB_ENV
+
+  - name: Clean previous builds
+run: |
+git clean -xfd || true
+make clean || true
+
+- name: Generate configure script
+run: |
+source "$EMSDK_ENV"
+./buildconf --force   - name: Configure PHP with Emscripten
      run: |
       source "$EMSDK_ENV"
       emconfigure ./configure \
