@@ -1,0 +1,49 @@
+name: Build PHP WASM
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-php-wasm:
+    runs-on: [self-hosted, Linux, x64]
+
+    steps:
+      - name: Checkout PHP source
+        uses: actions/checkout@v3
+
+      - name: Setup Emscripten
+        uses: emscripten-core/setup-emsdk@v2
+        with:
+          emsdk-version: latest
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf bison re2c libxml2-dev \
+            libsqlite3-dev libzip-dev libssl-dev unzip pkg-config
+
+      - name: Prepare PHP build
+        run: |
+          ./buildconf || true
+          emconfigure ./configure \
+            --disable-all \
+            --enable-cli \
+            --without-pear \
+            --disable-libxml \
+            --disable-opcache \
+            --disable-dom \
+            --disable-phar \
+            --disable-simplexml \
+            --disable-tokenizer
+
+      - name: Build PHP with Emscripten
+        run: |
+          emmake make -j$(nproc)
+
+      - name: Copy WASM output
+        run: |
+          mkdir -p dist
+          cp sapi/cli/php dist/php.wasm
