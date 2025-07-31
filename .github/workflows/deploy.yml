@@ -11,24 +11,6 @@ jobs:
    steps:
    - name: Checkout source
      uses: actions/checkout@v4
-
-   - name: Install build dependencies
-     run: |
-      sudo apt-get update
-      sudo apt-get install -y \
-        build-essential \
-        cmake \
-        python3 \
-        curl \
-        git \
-        autoconf \
-        bison \
-        re2c \
-        libxml2-dev \
-        libsqlite3-dev \
-        libcurl4-openssl-dev \
-        pkg-config \
-        libssl-dev
    - name: Set up Emscripten SDK
      run: |
       git clone https://github.com/emscripten-core/emsdk.git
