@@ -1,27 +1,26 @@
-name: Build and Deploy PHP-WASM Worker
+name: Build and Deploy PHP WASM Worker
 
 on:
   push:
     branches:
-      - main   # 你要监控的分支
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      # 安装 Emscripten SDK 环境
-      - name: Install Emscripten SDK
+      - name: Setup Emscripten
         uses: emscripten-core/setup-emsdk@v2
         with:
           emsdk-version: latest
 
-      # 编译 PHP 源码（假设入口文件 src/php.c，改为你的真实入口）
-      - name: Build PHP WASM with Emscripten
+      - name: Build PHP WASM
         run: |
+          mkdir -p dist
           emcc src/php.c \
             -o dist/php-wasm.js \
             -s WASM=1 \
@@ -29,19 +28,11 @@ jobs:
             -s EXPORT_NAME='createPHPModule' \
             -O3 \
             --closure 1
-          
-          # 这里可改为你真正的构建命令和参数
 
-      # 安装 wrangler（Cloudflare CLI）
       - name: Install Wrangler
         run: npm install -g wrangler@4.26.1
 
-      # 登录 Cloudflare（你需要把 CF_API_TOKEN 放到仓库 Secrets）
-      - name: Authenticate Wrangler
-        run: wrangler login
-
-      # 发布到 Cloudflare Workers
       - name: Deploy to Cloudflare Workers
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-        run: wrangler publish
+        run: wrangler publish --api-token $CF_API_TOKEN
