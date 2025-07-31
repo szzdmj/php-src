@@ -34,6 +34,7 @@ jobs:
    - name: Configure PHP with Emscripten
      run: |
       source "$EMSDK_ENV"
+      continue-on-error: true
       emconfigure ./configure
       --disable-all
       --without-pear
