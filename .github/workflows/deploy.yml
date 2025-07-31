@@ -1,82 +1,105 @@
 name: Build PHP WASM for Cloudflare Workers
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+push:
+branches: [ main ]
+workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    runs-on: [self-hosted, Linux, x64]
+build-and-deploy:
+runs-on: [self-hosted, Linux, x64]
 
-    steps:
-- name: Checkout source
-  uses: actions/checkout@v4
+steps:
+  - name: Checkout source
+    uses: actions/checkout@v4
 
-- name: Install dependencies
-  run: |
-    sudo apt-get update
-    sudo apt-get install -y \
-      build-essential \
-      cmake \
-      python3 \
-      curl \
-      git \
-      autoconf \
-      bison \
-      re2c \
-      libxml2-dev \
-      libsqlite3-dev \
-      libcurl4-openssl-dev \
-      libssl-dev \
-      pkg-config
+  - name: Set up Emscripten SDK
+    run: |
+      git clone https://github.com/emscripten-core/emsdk.git
+      cd emsdk
+      ./emsdk install latest
+      ./emsdk activate latest
+      echo "source $(pwd)/emsdk_env.sh" >> $GITHUB_ENV
 
-- name: Set up Emscripten SDK
-  run: |
-    git clone https://github.com/emscripten-core/emsdk.git
-    cd emsdk
-    ./emsdk install latest
-    ./emsdk activate latest
-    echo "source $(pwd)/emsdk_env.sh" >> $GITHUB_ENV
+  - name: Load Emscripten environment
+    run: |
+      source emsdk/emsdk_env.sh
+      echo "EMSDK_ENV=$PWD/emsdk/emsdk_env.sh" >> $GITHUB_ENV
 
-- name: Load Emscripten environment
-  run: |
-    source emsdk/emsdk_env.sh
-    echo "EMSDK_ENV=$PWD/emsdk/emsdk_env.sh" >> $GITHUB_ENV
+  - name: Clean previous builds
+    run: |
+      git clean -xfd || true
+      make clean || true
 
-- name: Clean previous builds
-  run: |
-    git clean -xfd || true
-    make clean || true
+  - name: Generate configure script
+    run: |
+      source "$EMSDK_ENV"
+      ./buildconf --force
 
-- name: Generate configure script
-  run: |
-    source "$EMSDK_ENV"
-    ./buildconf --force
+  - name: Configure PHP with Emscripten
+    run: |
+      source "$EMSDK_ENV"
+      emconfigure ./configure \
+        --disable-all \
+        --without-pear \
+        --enable-session \
+        --enable-mbstring \
+        --with-curl \
+        --disable-cli
 
-- name: Configure PHP with Emscripten
-  run: |
-    source "$EMSDK_ENV"
-    emconfigure ./configure \
-      --disable-all \
-      --without-pear \
-      --enable-session \
-      --enable-mbstring \
-      --with-curl \
-      --disable-cli
+  - name: Build libphp
+    run: |
+      source "$EMSDK_ENV"
+      emmake make -j$(nproc)
 
-- name: Build libphp
-  run: |
-    source "$EMSDK_ENV"
-    emmake make -j$(nproc)
+  - name: Add embed_main.c
+    run: |
+      cat <<EOF > embed_main.c
+      #include <php_embed.h>
+      int main(int argc, char **argv) {
+        PHP_EMBED_START_BLOCK(argc, argv);
+        zend_eval_string("echo '✅ Hello from PHP WASM';", NULL, "embedded_code");
+        PHP_EMBED_END_BLOCK();
+        return 0;
+      }
+  - name: Link embed_main.c into WASM
+    run: |
+      source "$EMSDK_ENV"
+      mkdir -p dist
+      emcc \
+        embed_main.c \
+        -I. -I./main -I./Zend -I./TSRM -I./sapi/embed \
+        -L.libs -lphp \
+        -sEXPORTED_FUNCTIONS="['_main']" \
+        -sALLOW_MEMORY_GROWTH \
+        -sERROR_ON_UNDEFINED_SYMBOLS=0 \
+        -sENVIRONMENT=web \
+        -o dist/php.js
 
-- name: Add embed_main.c
-  run: |
-    cat <<EOF > embed_main.c
-    #include <php_embed.h>
-    int main(int argc, char **argv) {
-      PHP_EMBED_START_BLOCK(argc, argv);
-      zend_eval_string("echo '✅ Hello from PHP WASM';", NULL, "embedded_code");
-      PHP_EMBED_END_BLOCK();
-      return 0;
-    }
+  - name: Inline WASM into worker.js
+    run: |
+      WASM_FILE=dist/php.wasm
+      if [ ! -f "$WASM_FILE" ]; then echo "No wasm file!" && exit 1; fi
+      WASM_BASE64=$(base64 -w 0 "$WASM_FILE")
+      cat <<EOF > dist/worker.js
+      const wasmBase64 = "$WASM_BASE64";
+      async function initWasm() {
+        const wasmBinary = Uint8Array.from(atob(wasmBase64), c => c.charCodeAt(0));
+        const { instance } = await WebAssembly.instantiate(wasmBinary, {
+          env: { abort: () => {} }
+        });
+        return instance.exports;
+      }
+      addEventListener("fetch", event => {
+        event.respondWith(handleRequest());
+      });
+      async function handleRequest() {
+        const exports = await initWasm();
+        exports.main();
+        return new Response("✅ PHP WASM executed in Worker");
+      }
+  - name: Upload artifact
+    uses: actions/upload-artifact@v4
+    with:
+      name: wasmphp
+      path: dist/
