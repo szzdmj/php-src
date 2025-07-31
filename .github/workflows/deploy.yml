@@ -29,8 +29,10 @@ jobs:
    - name: Generate configure script
      run: |
       source "$EMSDK_ENV"
-     ./buildconf --force   - name: Configure PHP with Emscripten
-   run: |
+      ./buildconf --force
+     
+   - name: Configure PHP with Emscripten
+     run: |
       source "$EMSDK_ENV"
       emconfigure ./configure \
         --disable-all \
@@ -40,12 +42,12 @@ jobs:
         --with-curl \
         --without-libxml \
         --disable-cli
-      - name: Compile PHP to WASM
-      run: |
+   - name: Compile PHP to WASM
+     run: |
       source "$EMSDK_ENV"
       emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
-      - name: Package output into worker.js
-      run: |
+   - name: Package output into worker.js
+     run: |
       mkdir -p dist
       WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
       if [ ! -f "$WASM_FILE" ]; then echo "No .wasm file found!" && exit 1; fi
@@ -55,8 +57,8 @@ jobs:
       echo 'addEventListener("fetch", event => {' >> dist/worker.js
       echo '  event.respondWith(new Response("PHP WASM Ready"))' >> dist/worker.js
       echo '});' >> dist/worker.js
-      - name: Upload artifact
-       uses: actions/upload-artifact@v4
+   - name: Upload artifact
+     uses: actions/upload-artifact@v4
        with:
         name: wasmphp
         path: dist/
