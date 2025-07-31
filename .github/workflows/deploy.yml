@@ -34,21 +34,27 @@ jobs:
    - name: Configure PHP with Emscripten
      run: |
       source "$EMSDK_ENV"
-      emconfigure ./configure \
-        --disable-all \
-        --without-pear \
-        --enable-session \
-        --enable-mbstring \
-        --disable-libxml \
-        --disable-cli \
-        --with-curl \
-        --enable-mbstring \
-        --enable-session \
-        --enable-json \
-        --enable-tokenizer \
-        --enable-filter \
-        --enable-hash \
-        --enable-posix
+      emconfigure ./configure
+      --disable-all
+      --without-pear
+      --enable-session
+      --enable-mbstring
+      --disable-libxml
+      --disable-cli
+      --with-curl
+      --enable-json
+      --enable-tokenizer
+      --enable-filter
+      --enable-hash
+      --enable-posix
+      continue-on-error: true
+
+   - name: Show config.log if configure fails
+     if: failure()
+     run: |
+      echo "configure failed, showing config.log:"
+      cat config.log || find . -name config.log -exec cat {} ;
+
    - name: Compile PHP to WASM
      run: |
       source "$EMSDK_ENV"
