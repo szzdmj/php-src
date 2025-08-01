@@ -71,6 +71,7 @@ jobs:
             --disable-all \
             --without-pear \
             --disable-cli \
+      --disable-opcache \
             --with-libxml \
             --enable-dom \
             --enable-simplexml \
@@ -83,11 +84,11 @@ jobs:
             --enable-tokenizer \
             --enable-filter \
             --enable-hash \
-            --enable-posix \
-            LIBXML_CFLAGS="$LIBXML_CFLAGS" \
-            LIBXML_LIBS="$LIBXML_LIBS" \
-            ONIG_CFLAGS="$ONIG_CFLAGS" \
-            ONIG_LIBS="$ONIG_LIBS"
+        --enable-posix \
+        LIBXML_CFLAGS="$LIBXML_CFLAGS" \
+        LIBXML_LIBS="$LIBXML_LIBS" \
+        ONIG_CFLAGS="$ONIG_CFLAGS" \
+        ONIG_LIBS="$ONIG_LIBS"
 
       - name: Show config.log if configure fails
         if: failure()
