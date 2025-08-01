@@ -1,41 +1,12 @@
-name: Build PHP WASM for Cloudflare Workers
-
-on:
-  push:
-    branches: [ master ]
-  workflow_dispatch:
-
-jobs:
-  build-and-deploy:
-    runs-on: [self-hosted, Linux, x64]
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Set up Emscripten SDK
-        run: |
-          git clone https://github.com/emscripten-core/emsdk.git
-          cd emsdk
-          ./emsdk install latest
-          ./emsdk activate latest
-
-      - name: Build libxml2 with Emscripten
+      - name: Build oniguruma with Emscripten
         run: |
           source ./emsdk/emsdk_env.sh
-          git clone https://gitlab.gnome.org/GNOME/libxml2.git
-          cd libxml2
-          git checkout v2.9.14
-
-          # Generate configure script if missing
-          test -x configure || ./autogen.sh
-
-          # Configure with --without-zlib
+          git clone https://github.com/kkos/oniguruma.git
+          cd oniguruma
+          autoreconf -vfi
           emconfigure ./configure \
             --host=wasm32-unknown-emscripten \
             --disable-shared \
-            --without-python \
-            --without-zlib \
-            --without-lzma \
             --disable-dependency-tracking \
             --prefix=$(pwd)/build
 
@@ -43,39 +14,34 @@ jobs:
           emmake make install
           cd ..
 
-      - name: Export oniguruma paths for PHP
-        run: |
-          echo "ONIG_CFLAGS=-I${GITHUB_WORKSPACE}/oniguruma/build/include" >> $GITHUB_ENV
-          echo "ONIG_LIBS=${GITHUB_WORKSPACE}/oniguruma/build/lib/libonig.a" >> $GITHUB_ENV
-
       - name: Clean previous builds
         run: |
           git clean -xfd || true
-          if [ -f Makefile ]; then make clean || true; fi
-          rm -rf config.cache autom4te.cache || true
-
-      - name: Generate configure script
+          rm -f config.cache autom4te.cache || true
+          
+      - name: Generate configure script if needed
         run: |
-          source ./emsdk/emsdk_env.sh
-          ./buildconf --force
+          if [ ! -x configure ]; then ./buildconf --force; fi
 
       - name: Configure PHP with Emscripten
         env:
-          LIBXML_CFLAGS: "-I${GITHUB_WORKSPACE}/libxml2/build/include"
-          LIBXML_LIBS: "-L${GITHUB_WORKSPACE}/libxml2/build/lib -lxml2"
-          ONIG_CFLAGS: "${{ env.ONIG_CFLAGS }}"
-          ONIG_LIBS: "${{ env.ONIG_LIBS }}"
+          LIBXML_CFLAGS: "-I$GITHUB_WORKSPACE/libxml2/build/include"
+          LIBXML_LIBS: "-L$GITHUB_WORKSPACE/libxml2/build/lib -lxml2"
+          ONIG_CFLAGS: "-I$GITHUB_WORKSPACE/oniguruma/build/include"
+          ONIG_LIBS: "$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a"
           CFLAGS: "-O2 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker -sEXPORTED_FUNCTIONS=[_main,_php_embed_init,_php_embed_shutdown] -sEXPORTED_RUNTIME_METHODS=[cwrap,ccall]"
-          CC: emcc
-          CXX: em++
         run: |
           source ./emsdk/emsdk_env.sh
+          export CC=emcc
+          export CXX=em++
           emconfigure ./configure \
             --host=wasm32-unknown-emscripten \
             --disable-all \
             --disable-cli \
             --disable-cgi \
             --disable-phpdbg \
+            --disable-zlib \
+            --disable-curl \
             --without-pear \
             --with-libxml \
             --enable-embed=static \
@@ -83,13 +49,15 @@ jobs:
             --enable-xml \
             --enable-session \
             --enable-mbstring \
+            --enable-json \
             --enable-tokenizer \
             --enable-filter \
             --enable-posix \
             LIBXML_CFLAGS="$LIBXML_CFLAGS" \
             LIBXML_LIBS="$LIBXML_LIBS" \
             ONIG_CFLAGS="$ONIG_CFLAGS" \
-            ONIG_LIBS="$ONIG_LIBS" 
+            ONIG_LIBS="$ONIG_LIBS" \
+            --cache-file=config.cache
 
       - name: Show config.log if configure fails
         if: failure()
