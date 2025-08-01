@@ -13,5 +13,7 @@
         { "type": "ESModule", "globs": ["**/*.js"] },
         { "type": "Data", "globs": ["**/*.php"] },
         { "type": "Data", "globs": ["**/*.wasm"] }
-  ]
+      ]
+    }
+  }
 }
