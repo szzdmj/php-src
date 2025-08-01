@@ -29,6 +29,7 @@ jobs:
             --host=wasm32-unknown-emscripten \
             --disable-shared \
             --without-python \
+            --without-zlib \
             --disable-dependency-tracking \
             --prefix=$(pwd)/build
           emmake make -j$(nproc)
