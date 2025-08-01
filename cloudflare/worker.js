@@ -1,29 +1,22 @@
-import { PhpWebWorker } from '@php-wasm/web';
-
-const BOOTSTRAP_FILE = 'index.php';
+import phpWasm from './php.wasm';
+import indexPhp from './index.php';
 
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const php = new PhpWebWorker({
-      wasmBinaryPath: new URL('php.wasm', import.meta.url).toString(),
+    const wasmModule = await WebAssembly.compile(phpWasm);
+    const instance = await WebAssembly.instantiate(wasmModule, {
+      env: {
+        // 补充必要的 env，如 memory, table, fd_write, 等
+        // 若你使用 embed SAPI，理论上 _main 会自动运行 index.php
+      }
     });
 
-    const file = url.pathname === '/' ? BOOTSTRAP_FILE : decodeURIComponent(url.pathname.slice(1));
+    if (instance.exports._main) {
+      instance.exports._main(); // 启动 php.wasm（运行 embed index.php）
+    }
 
-    const response = await php.run({
-      documentRoot: '/',
-      scriptName: `/${file}`,
-      requestUrl: request.url,
-      method: request.method,
-      headers: Object.fromEntries(request.headers),
-      body: request.body,
-      files: {},
+    return new Response('PHP WASM executed (placeholder)', {
+      status: 200
     });
-
-    return new Response(response.body, {
-      status: response.statusCode,
-      headers: response.headers,
-    });
-  },
-};
+  }
+}
