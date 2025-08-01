@@ -6,8 +6,12 @@
   "wasm_modules": {
     "php": "./php.wasm"
   },
-  "modules": [
-    { "type": "ESModule", "path": "./worker.js" },
-    { "type": "Data", "path": "Static_Creation/public/index.php" }
+  "build": {
+    "upload": {
+      "format": "modules",
+      "rules": [
+        { "type": "ESModule", "globs": ["**/*.js"] },
+        { "type": "Data", "globs": ["**/*.php"] },
+        { "type": "Data", "globs": ["**/*.wasm"] }
   ]
 }
