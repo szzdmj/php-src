@@ -1,38 +1,30 @@
-# Dockerfile
-# 构建 PHP -> WebAssembly (Emscripten)
+# Dockerfile: build PHP to WebAssembly for Cloudflare Workers
+FROM emscripten/emsdk:3.1.45
 
-FROM emscripten/emsdk:3.1.45 AS builder
-
+# Copy source code (assume bind mount or COPY from repo)
 WORKDIR /src
+COPY . /src
 
-# 安装 PHP 源码
-RUN git clone --depth=1 https://github.com/szzdmj/php-src .
+# Install build dependencies (some are no-op in emscripten)
+RUN apt-get update && apt-get install -y \
+    autoconf automake libtool re2c bison flex \
+    libxml2-dev libsqlite3-dev libonig-dev libcurl4-openssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# 可选：加入你维护的 patch
-# COPY ./patches ./patches
-# RUN patch -p1 < patches/php-emscripten.patch
+# Patch or override php-src files here if needed
+COPY ./wasm_overlay/ /src/
 
-# 配置构建环境
-RUN ./buildconf --force && \
+# Configure and build PHP to wasm
+RUN ./buildconf && \
     emconfigure ./configure \
-      --disable-all \
-      --disable-cli \
-      --disable-cgi \
-      --enable-embed=static \
-      --without-pear \
-      --without-iconv \
-      --without-openssl \
-      --without-xml \
-      --without-zlib \
-      --without-pcre \
-      --with-libdir=lib && \
+        --disable-all \
+        --enable-embed=static \
+        --without-pear \
+        --disable-cli \
+        --enable-session --enable-tokenizer --enable-filter --enable-json --enable-mbstring \
+        --with-libxml --with-curl --with-zlib \
+        CFLAGS="-O3" && \
     emmake make -j$(nproc)
 
-# 输出 wasm 文件和 glue js
-RUN mkdir -p /out && \
-    cp sapi/embed/php /out/php.wasm && \
-    echo "export default async function handleRequest(event) { return new Response('PHP WASM Ready') }" > /out/worker.js
-
-# ---------- 部署阶段 ----------
-FROM scratch AS export
-COPY --from=builder /out /out
+# Final copy-out: php.wasm and bootstrap JS
+CMD ["/bin/bash"]
