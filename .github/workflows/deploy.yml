@@ -30,6 +30,7 @@ jobs:
             --disable-shared \
             --disable-dependency-tracking \
             --prefix=$(pwd)/build
+
           emmake make -j$(nproc)
           emmake make install
           cd ..
@@ -49,7 +50,7 @@ jobs:
           LIBXML_LIBS: "-L$GITHUB_WORKSPACE/libxml2/build/lib -lxml2"
           ONIG_CFLAGS: "-I$GITHUB_WORKSPACE/oniguruma/build/include"
           ONIG_LIBS: "$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a"
-          CFLAGS: "-O2 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker -sEXPORTED_FUNCTIONS=[_main,_php_embed_init,_php_embed_shutdown] -sEXPORTED_RUNTIME_METHODS=[cwrap,ccall]"
+          CFLAGS: "-O2 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker"
         run: |
           source ./emsdk/emsdk_env.sh
           export CC=emcc
@@ -62,8 +63,6 @@ jobs:
             --disable-phpdbg \
             --disable-zlib \
             --disable-curl \
-            --disable-debug \
-            --disable-opcache \
             --without-pear \
             --with-libxml \
             --enable-embed=static \
@@ -84,16 +83,8 @@ jobs:
       - name: Show config.log if configure fails
         if: failure()
         run: |
-          echo "❌ configure failed, trying to extract config.log errors:"
-          find . -name config.log | while read log; do
-            echo -e "\n---- $log ----"
-            grep -i -E 'error:|undefined reference|emcc:' "$log" || echo "(no grep matches)"
-            echo -e "\nFull path: $log"
-          done
-
-          echo -e "\n==== config.cache dump ===="
-          cat config.cache || echo "(no config.cache)"
-          echo "==========================="
+          echo "configure failed, showing config.log:"
+          find . -name config.log -exec cat {} \;
 
       - name: Compile PHP to WASM
         run: |
@@ -108,11 +99,11 @@ jobs:
           base64 "$WASM_FILE" > dist/php.wasm.base64
           WASM_BASE64_CONTENT=$(cat dist/php.wasm.base64)
           cat > dist/worker.js <<EOF
-          const wasmBase64 = \`${WASM_BASE64_CONTENT}\`;
-          addEventListener('fetch', event => {
-            event.respondWith(new Response('PHP WASM Ready'));
-          });
-          EOF
+const wasmBase64 = \`${WASM_BASE64_CONTENT}\`;
+addEventListener('fetch', event => {
+  event.respondWith(new Response('PHP WASM Ready'));
+});
+EOF
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
