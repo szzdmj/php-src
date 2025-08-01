@@ -120,11 +120,11 @@ jobs:
           base64 "$WASM_FILE" > dist/php.wasm.base64
           # 这里简单写个 Worker 脚本演示，正常用时你需要写完整 wasm 实例加载和调用逻辑
           cat > dist/worker.js <<EOF
-const wasmBase64 = \`${cat dist/php.wasm.base64}\`;
-addEventListener('fetch', event => {
-  event.respondWith(new Response('PHP WASM Ready'));
-});
-EOF
+          const wasmBase64 = \`${cat dist/php.wasm.base64}\`;
+          addEventListener('fetch', event => {
+          event.respondWith(new Response('PHP WASM Ready'));
+          });
+          EOF
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
