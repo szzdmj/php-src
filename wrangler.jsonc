@@ -8,6 +8,6 @@
   },
   "modules": [
     { "type": "ESModule", "path": "./worker.js" },
-    { "type": "Data", "path": "./index.php" }
+    { "type": "Data", "path": "Static_Creation/public/index.php" }
   ]
 }
