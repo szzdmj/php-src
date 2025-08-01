@@ -30,7 +30,6 @@ jobs:
             --disable-shared \
             --disable-dependency-tracking \
             --prefix=$(pwd)/build
-
           emmake make -j$(nproc)
           emmake make install
           cd ..
@@ -39,7 +38,7 @@ jobs:
         run: |
           git clean -xfd || true
           rm -f config.cache autom4te.cache || true
-          
+
       - name: Generate configure script
         run: |
           if [ ! -x configure ]; then ./buildconf --force; fi
@@ -63,6 +62,8 @@ jobs:
             --disable-phpdbg \
             --disable-zlib \
             --disable-curl \
+            --disable-debug \
+            --disable-opcache \
             --without-pear \
             --with-libxml \
             --enable-embed=static \
@@ -83,8 +84,16 @@ jobs:
       - name: Show config.log if configure fails
         if: failure()
         run: |
-          echo "configure failed, showing config.log:"
-          find . -name config.log -exec cat {} \;
+          echo "❌ configure failed, trying to extract config.log errors:"
+          find . -name config.log | while read log; do
+            echo -e "\n---- $log ----"
+            grep -i -E 'error:|undefined reference|emcc:' "$log" || echo "(no grep matches)"
+            echo -e "\nFull path: $log"
+          done
+
+          echo -e "\n==== config.cache dump ===="
+          cat config.cache || echo "(no config.cache)"
+          echo "==========================="
 
       - name: Compile PHP to WASM
         run: |
@@ -101,7 +110,7 @@ jobs:
           cat > dist/worker.js <<EOF
           const wasmBase64 = \`${WASM_BASE64_CONTENT}\`;
           addEventListener('fetch', event => {
-          event.respondWith(new Response('PHP WASM Ready'));
+            event.respondWith(new Response('PHP WASM Ready'));
           });
           EOF
 
