@@ -31,23 +31,23 @@ env:
 
       - name: Build libxml2 with Emscripten
         run: |
-      mkdir -p libxml2/build
+          mkdir -p libxml2/build
           cd libxml2
-      curl -LO https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.11.7/libxml2-v2.11.7.tar.gz
-      tar -xzf libxml2-v2.11.7.tar.gz --strip-components=1
-      emconfigure ./autogen.sh --disable-shared --enable-static --without-python
+          curl -LO https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.11.7/libxml2-v2.11.7.tar.gz
+          tar -xzf libxml2-v2.11.7.tar.gz --strip-components=1
+          emconfigure ./autogen.sh --disable-shared --enable-static --without-python
           emmake make -j$(nproc)
-      mkdir -p build/include build/lib
-      cp -r include/libxml build/include/
-      cp .libs/libxml2.a build/lib/
+          mkdir -p build/include build/lib
+          cp -r include/libxml build/include/
+          cp .libs/libxml2.a build/lib/
 
       - name: Build oniguruma with Emscripten
         run: |
-      mkdir -p oniguruma/build
+          mkdir -p oniguruma/build
           cd oniguruma
-      curl -LO https://github.com/kkos/oniguruma/releases/download/v6.9.9/onig-6.9.9.tar.gz
-      tar -xzf onig-6.9.9.tar.gz --strip-components=1
-      emconfigure ./configure --disable-shared --enable-static --prefix=$PWD/build
+          curl -LO https://github.com/kkos/oniguruma/releases/download/v6.9.9/onig-6.9.9.tar.gz
+          tar -xzf onig-6.9.9.tar.gz --strip-components=1
+          emconfigure ./configure --disable-shared --enable-static --prefix=$PWD/build
           emmake make -j$(nproc)
           emmake make install
           cd ..
