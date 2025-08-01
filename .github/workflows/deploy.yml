@@ -82,6 +82,8 @@ jobs:
             --disable-cgi \
             --disable-opcache \
             --disable-phpdbg \
+            --disable-zlib \
+            --disable-curl \
             --without-pear \
             --with-libxml \
             --enable-embed=static \
@@ -97,16 +99,6 @@ jobs:
             --enable-filter \
             --enable-hash \
             --enable-posix \
-            --disable-bz2 \
-            --disable-exif \
-            --disable-intl \
-            --disable-gettext \
-            --disable-fileinfo \
-            --disable-sysvmsg \
-            --disable-sysvsem \
-            --disable-sysvshm \
-            --disable-shmop \
-            --disable-pcntl \
             LIBXML_CFLAGS="$LIBXML_CFLAGS" \
             LIBXML_LIBS="$LIBXML_LIBS" \
             ONIG_CFLAGS="$ONIG_CFLAGS" \
