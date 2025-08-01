@@ -1,6 +1,6 @@
 // worker.js
 import phpWasm from 'cloudflare/php.wasm';
-import indexPhp from 'Static_Creation/public/index.php';
+import indexPhp from './Static_Creation/public/index.php';
 
 export default {
   async fetch(request, env, ctx) {
