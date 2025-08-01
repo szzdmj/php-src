@@ -60,8 +60,8 @@ jobs:
             --disable-cli \
             --disable-cgi \
             --disable-phpdbg \
-        --disable-debug \
-        --disable-opcache \
+            --disable-debug \
+            --disable-opcache \
             --without-pear \
             --with-libxml \
             --enable-embed=static \
