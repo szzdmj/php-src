@@ -39,19 +39,19 @@ jobs:
        echo "LIBXML_LIBS=$GITHUB_WORKSPACE/libxml2/build/lib/libxml2.a" >> $GITHUB_ENV
 
    - name: Clean previous builds
-   run: |
-    git clean -xfd || true
-    make clean || true
-
-    - name: Generate configure script
      run: |
-    source ./emsdk/emsdk_env.sh
+       git clean -xfd || true
+       make clean || true
+
+   - name: Generate configure script
+     run: |
+      source ./emsdk/emsdk_env.sh
       ./buildconf --force
      
-    - name: Configure PHP with Emscripten
+   - name: Configure PHP with Emscripten
      run: |
-    source ./emsdk/emsdk_env.sh
-    emconfigure ./configure \
+      source ./emsdk/emsdk_env.sh
+      emconfigure ./configure \
       --disable-all \
          --without-pear \
          --disable-cli \
@@ -71,17 +71,17 @@ jobs:
          LIBXML_CFLAGS="$LIBXML_CFLAGS" \
          LIBXML_LIBS="$LIBXML_LIBS"
    
-    - name: Show config.log if configure fails
+   - name: Show config.log if configure fails
      if: failure()
      run: |
       echo "configure failed, showing config.log:"
-     find . -name config.log -exec cat {} \;
+      find . -name config.log -exec cat {} \;
    
-    - name: Compile PHP to WASM
+   - name: Compile PHP to WASM
      run: |
-    source ./emsdk/emsdk_env.sh
+      source ./emsdk/emsdk_env.sh
       emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
-    - name: Package output into worker.js
+   - name: Package output into worker.js
      run: |
       mkdir -p dist
       WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
@@ -92,7 +92,7 @@ jobs:
       echo 'addEventListener("fetch", event => {' >> dist/worker.js
       echo '  event.respondWith(new Response("PHP WASM Ready"))' >> dist/worker.js
       echo '});' >> dist/worker.js
-    - name: Upload artifact
+   - name: Upload artifact
      uses: actions/upload-artifact@v4
      with:
           name: wasmphp
