@@ -1,0 +1,7 @@
+{
+  "name": "php-worker",
+  "type": "module",
+  "dependencies": {
+    "@php-wasm/web": "^0.5.0"
+  }
+}
