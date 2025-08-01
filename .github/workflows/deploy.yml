@@ -8,9 +8,15 @@ on:
 jobs:
   build-and-deploy:
     runs-on: [self-hosted, Linux, x64]
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build build-essential autoconf bison re2c libtool pkg-config git curl
 
       - name: Set up Emscripten SDK
         run: |
@@ -18,110 +24,71 @@ jobs:
           cd emsdk
           ./emsdk install latest
           ./emsdk activate latest
-          echo "source $PWD/emsdk_env.sh" >> $GITHUB_ENV
 
-      - name: Export Emscripten env
-        run: echo "source ./emsdk/emsdk_env.sh" >> $GITHUB_ENV
-
-      - name: Build libxml2 with Emscripten
+      - name: Clone libxml2
         run: |
-          source ./emsdk/emsdk_env.sh
-          git clone --depth=1 https://github.com/GNOME/libxml2.git
+          git clone https://gitlab.gnome.org/GNOME/libxml2.git
           cd libxml2
-          emconfigure ./autogen.sh \
-            --host=wasm32-unknown-emscripten \
-            --without-python \
-            --without-zlib \
-            --disable-shared \
-            --enable-static \
-            --prefix=$(pwd)/build
+          mkdir build
+          cd build
+          source ../../emsdk/emsdk_env.sh
+          emcmake cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DWITH_ZLIB=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$(pwd)/install
           emmake make -j$(nproc)
           emmake make install
-          cd ..
 
-      - name: Build oniguruma with Emscripten
+      - name: Clone oniguruma
         run: |
-          source ./emsdk/emsdk_env.sh
-          git clone --depth=1 https://github.com/kkos/oniguruma.git
+          git clone https://github.com/kkos/oniguruma.git
           cd oniguruma
-          autoreconf -vfi
-          emconfigure ./configure \
-            --host=wasm32-unknown-emscripten \
-            --disable-shared \
-            --disable-dependency-tracking \
-            --prefix=$(pwd)/build
+          mkdir build
+          cd build
+          source ../../emsdk/emsdk_env.sh
+          emcmake cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$(pwd)/install
           emmake make -j$(nproc)
           emmake make install
-          cd ..
 
-      - name: Clean previous builds
-        run: |
-          git clean -xfd || true
-          rm -f config.cache autom4te.cache || true
-
-      - name: Generate configure script
-        run: |
-          if [ ! -x configure ]; then ./buildconf --force; fi
-
-      - name: Configure PHP with Emscripten
-        env:
-          LIBXML_CFLAGS: "-I$GITHUB_WORKSPACE/libxml2/build/include"
-          LIBXML_LIBS: "-L$GITHUB_WORKSPACE/libxml2/build/lib -lxml2"
-          ONIG_CFLAGS: "-I$GITHUB_WORKSPACE/oniguruma/build/include"
-          ONIG_LIBS: "$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a"
+      - name: Configure PHP
         run: |
           source ./emsdk/emsdk_env.sh
-          export CC=emcc
-          export CXX=em++
+          ./buildconf --force
           emconfigure ./configure \
-            --host=wasm32-unknown-emscripten \
             --disable-all \
             --disable-cli \
             --disable-cgi \
-            --disable-phpdbg \
-            --disable-debug \
             --disable-opcache \
+            --disable-phpdbg \
             --without-pear \
             --with-libxml \
             --enable-embed=static \
+            --enable-dom \
             --enable-simplexml \
             --enable-xml \
+            --enable-xmlreader \
+            --enable-xmlwriter \
             --enable-session \
             --enable-mbstring \
+            --enable-json \
             --enable-tokenizer \
             --enable-filter \
+            --enable-hash \
             --enable-posix \
-            LIBXML_CFLAGS="$LIBXML_CFLAGS" \
-            LIBXML_LIBS="$LIBXML_LIBS" \
-            ONIG_CFLAGS="$ONIG_CFLAGS" \
-            ONIG_LIBS="$ONIG_LIBS" \
-            --cache-file=config.cache
+            LIBXML_CFLAGS="-I$(pwd)/libxml2/build/install/include/libxml2" \
+            LIBXML_LIBS="$(pwd)/libxml2/build/install/lib/libxml2.a" \
+            ONIG_CFLAGS="-I$(pwd)/oniguruma/build/install/include" \
+            ONIG_LIBS="$(pwd)/oniguruma/build/install/lib/libonig.a"
 
-      - name: Show config.log if configure fails
-        if: failure()
-        run: find . -name config.log -exec cat {} \;
-
-      - name: Compile PHP to WASM
+      - name: Build PHP
         run: |
           source ./emsdk/emsdk_env.sh
-          emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
+          emmake make -j$(nproc)
 
-      - name: Package output into worker.js
+      - name: Build Worker Output
         run: |
           mkdir -p dist
-          WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
-          if [ ! -f "$WASM_FILE" ]; then echo "No .wasm file found!" && exit 1; fi
-          base64 "$WASM_FILE" > dist/php.wasm.base64
-          WASM_BASE64_CONTENT=$(cat dist/php.wasm.base64)
-          cat > dist/worker.js <<EOF
-          const wasmBase64 = \`${WASM_BASE64_CONTENT}\`;
-          addEventListener('fetch', event => {
-            event.respondWith(new Response('PHP WASM Ready'));
-          });
-          EOF
+          cp sapi/embed/php.wasm dist/
+          # 可以添加构建 Worker 脚本逻辑，如 glue.js 等
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: wasmphp
-          path: dist/
+      # 可选部署步骤
+      # - name: Deploy to Cloudflare Workers
+      #   run: |
+      #     wrangler publish
