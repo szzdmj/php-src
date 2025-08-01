@@ -18,7 +18,6 @@ jobs:
           cd emsdk
           ./emsdk install latest
           ./emsdk activate latest
-          echo "source $PWD/emsdk_env.sh" >> $GITHUB_ENV
 
       - name: Build libxml2 with Emscripten
         run: |
