@@ -57,10 +57,10 @@ jobs:
           git clean -xfd || true
           rm -f config.cache autom4te.cache || true
 
-  - name: Configure and build PHP
+      - name: Configure and build PHP
         run: |
-      cd php-src
-      ./buildconf --force
+          cd php-src
+          ./buildconf --force
           emconfigure ./configure \
             --host=wasm32-unknown-emscripten \
             --disable-all \
@@ -79,11 +79,11 @@ jobs:
             --enable-tokenizer \
             --enable-filter \
             --enable-posix \
-         LIBXML_CFLAGS="-I$GITHUB_WORKSPACE/libxml2/build/include" \
-        LIBXML_LIBS="-L$GITHUB_WORKSPACE/libxml2/build/lib -lxml2" \
-        ONIG_CFLAGS="-I$GITHUB_WORKSPACE/oniguruma/build/include" \
-        ONIG_LIBS="$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a"
-      emmake make -j$(nproc)
+           LIBXML_CFLAGS="-I$GITHUB_WORKSPACE/libxml2/build/include" \
+           LIBXML_LIBS="-L$GITHUB_WORKSPACE/libxml2/build/lib -lxml2" \
+           ONIG_CFLAGS="-I$GITHUB_WORKSPACE/oniguruma/build/include" \
+           ONIG_LIBS="$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a"
+           emmake make -j$(nproc)
 
 
       - name: Show config.log if configure fails
