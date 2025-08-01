@@ -57,7 +57,8 @@ jobs:
             --disable-all \
             --disable-cli \
             --enable-embed=static \
-            --with-libxml-dir=$(pwd)/libxml2
+            --disable-opcache \
+            --without-libxml
           emmake make -j$(nproc)
 
       - name: Post-build steps
