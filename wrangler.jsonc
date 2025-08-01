@@ -10,5 +10,5 @@
       "format": "modules",
       "dir": "cloudflare"
     }
-  }
+  },"name": "php-src-workers"
 }
