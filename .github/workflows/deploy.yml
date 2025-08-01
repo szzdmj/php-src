@@ -73,6 +73,7 @@ jobs:
           LIBXML_LIBS: ${{ env.LIBXML_LIBS }}
           ONIG_CFLAGS: ${{ env.ONIG_CFLAGS }}
           ONIG_LIBS: ${{ env.ONIG_LIBS }}
+          CFLAGS: "-O2 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker -sEXPORTED_FUNCTIONS=[_main,_php_embed_init,_php_embed_shutdown] -sEXPORTED_RUNTIME_METHODS=[cwrap,ccall]"
         run: |
           source ./emsdk/emsdk_env.sh
           emconfigure ./configure \
@@ -80,31 +81,24 @@ jobs:
             --disable-all \
             --disable-cli \
             --disable-cgi \
-            --disable-opcache \
             --disable-phpdbg \
             --disable-zlib \
             --disable-curl \
             --without-pear \
             --with-libxml \
             --enable-embed=static \
-            --enable-dom \
             --enable-simplexml \
             --enable-xml \
-            --enable-xmlreader \
-            --enable-xmlwriter \
             --enable-session \
             --enable-mbstring \
             --enable-json \
             --enable-tokenizer \
             --enable-filter \
-            --enable-hash \
             --enable-posix \
             LIBXML_CFLAGS="$LIBXML_CFLAGS" \
             LIBXML_LIBS="$LIBXML_LIBS" \
             ONIG_CFLAGS="$ONIG_CFLAGS" \
-            ONIG_LIBS="$ONIG_LIBS" \
-            CFLAGS="-O2 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT='web,worker' -sEXPORTED_FUNCTIONS='[_main,_php_embed_init,_php_embed_shutdown]' -sEXPORTED_RUNTIME_METHODS='[cwrap,ccall]'"
-
+            ONIG_LIBS="$ONIG_LIBS" 
       - name: Show config.log if configure fails
         if: failure()
         run: |
