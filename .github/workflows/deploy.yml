@@ -8,11 +8,11 @@ on:
 jobs:
   build-and-deploy:
     runs-on: [self-hosted, Linux, x64]
-env:
-  EMSDK: ${{ github.workspace }}/emsdk
-  EM_CONFIG: ${{ github.workspace }}/.emscripten
-  EM_CACHE: ${{ github.workspace }}/.emscripten_cache
-  EMCC_WASM_BACKEND: 1
+    env:
+      EMSDK: ${{ github.workspace }}/emsdk
+      EM_CONFIG: ${{ github.workspace }}/.emscripten
+      EM_CACHE: ${{ github.workspace }}/.emscripten_cache
+      EMCC_WASM_BACKEND: 1
 
   steps:
       - name: Checkout source
