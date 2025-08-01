@@ -18,7 +18,6 @@ jobs:
       ./emsdk install latest
       ./emsdk activate latest
       echo "source $PWD/emsdk_env.sh" >> $GITHUB_ENV
-
    - name: Build libxml2 with Emscripten
      run: |
        source ./emsdk/emsdk_env.sh
@@ -26,11 +25,11 @@ jobs:
        cd libxml2
        git checkout v2.9.14
        emconfigure ./autogen.sh \
-      --host=wasm32-unknown-emscripten \
-      --disable-shared \
-      --without-python \
-      --disable-dependency-tracking \
-      --prefix=$(pwd)/build
+       --host=wasm32-unknown-emscripten \
+       --disable-shared \
+       --without-python \
+       --disable-dependency-tracking \
+       --prefix=$(pwd)/build
        emmake make -j$(nproc)
        emmake make install
 
@@ -39,21 +38,21 @@ jobs:
        echo "LIBXML_CFLAGS=-I$GITHUB_WORKSPACE/libxml2/build/include/libxml2" >> $GITHUB_ENV
        echo "LIBXML_LIBS=$GITHUB_WORKSPACE/libxml2/build/lib/libxml2.a" >> $GITHUB_ENV
 
-      - name: Clean previous builds
-        run: |
-         git clean -xfd || true
-         make clean || true
+   - name: Clean previous builds
+   run: |
+    git clean -xfd || true
+    make clean || true
 
-      - name: Generate configure script
-        run: |
-       source ./emsdk/emsdk_env.sh
-         ./buildconf --force
+    - name: Generate configure script
+     run: |
+    source ./emsdk/emsdk_env.sh
+      ./buildconf --force
      
-      - name: Configure PHP with Emscripten
-        run: |
-       source ./emsdk/emsdk_env.sh
-       emconfigure ./configure \
-         --disable-all \
+    - name: Configure PHP with Emscripten
+     run: |
+    source ./emsdk/emsdk_env.sh
+    emconfigure ./configure \
+      --disable-all \
          --without-pear \
          --disable-cli \
          --with-libxml \
@@ -72,29 +71,29 @@ jobs:
          LIBXML_CFLAGS="$LIBXML_CFLAGS" \
          LIBXML_LIBS="$LIBXML_LIBS"
    
-      - name: Show config.log if configure fails
-        if: failure()
-        run: |
-         echo "configure failed, showing config.log:"
-       find . -name config.log -exec cat {} \;
+    - name: Show config.log if configure fails
+     if: failure()
+     run: |
+      echo "configure failed, showing config.log:"
+     find . -name config.log -exec cat {} \;
    
-      - name: Compile PHP to WASM
-        run: |
-       source ./emsdk/emsdk_env.sh
-         emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
-      - name: Package output into worker.js
-        run: |
-         mkdir -p dist
-         WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
-         if [ ! -f "$WASM_FILE" ]; then echo "No .wasm file found!" && exit 1; fi
-         base64 "$WASM_FILE" > dist/php.wasm.base64
-         echo "// Minimal Cloudflare Worker" > dist/worker.js
-         echo "const wasmBase64 = \`$(cat dist/php.wasm.base64)\`;" >> dist/worker.js
-         echo 'addEventListener("fetch", event => {' >> dist/worker.js
-         echo '  event.respondWith(new Response("PHP WASM Ready"))' >> dist/worker.js
-         echo '});' >> dist/worker.js
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
+    - name: Compile PHP to WASM
+     run: |
+    source ./emsdk/emsdk_env.sh
+      emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
+    - name: Package output into worker.js
+     run: |
+      mkdir -p dist
+      WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
+      if [ ! -f "$WASM_FILE" ]; then echo "No .wasm file found!" && exit 1; fi
+      base64 "$WASM_FILE" > dist/php.wasm.base64
+      echo "// Minimal Cloudflare Worker" > dist/worker.js
+      echo "const wasmBase64 = \`$(cat dist/php.wasm.base64)\`;" >> dist/worker.js
+      echo 'addEventListener("fetch", event => {' >> dist/worker.js
+      echo '  event.respondWith(new Response("PHP WASM Ready"))' >> dist/worker.js
+      echo '});' >> dist/worker.js
+    - name: Upload artifact
+     uses: actions/upload-artifact@v4
+     with:
           name: wasmphp
           path: dist/
