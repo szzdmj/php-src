@@ -18,10 +18,14 @@ jobs:
           cd emsdk
           ./emsdk install latest
           ./emsdk activate latest
+          echo "source $PWD/emsdk_env.sh" >> $GITHUB_ENV
+
+      - name: Export Emscripten env
+        run: echo "source ./emsdk/emsdk_env.sh" >> $GITHUB_ENV
 
       - name: Build libxml2 with Emscripten
         run: |
-          source emsdk/emsdk_env.sh
+          source ./emsdk/emsdk_env.sh
           git clone --depth=1 https://github.com/GNOME/libxml2.git
           cd libxml2
           emconfigure ./autogen.sh \
@@ -33,11 +37,12 @@ jobs:
             --prefix=$(pwd)/build
           emmake make -j$(nproc)
           emmake make install
+          cd ..
 
       - name: Build oniguruma with Emscripten
         run: |
-          source emsdk/emsdk_env.sh
-          git clone https://github.com/kkos/oniguruma.git
+          source ./emsdk/emsdk_env.sh
+          git clone --depth=1 https://github.com/kkos/oniguruma.git
           cd oniguruma
           autoreconf -vfi
           emconfigure ./configure \
@@ -47,6 +52,7 @@ jobs:
             --prefix=$(pwd)/build
           emmake make -j$(nproc)
           emmake make install
+          cd ..
 
       - name: Clean previous builds
         run: |
@@ -64,7 +70,7 @@ jobs:
           ONIG_CFLAGS: "-I$GITHUB_WORKSPACE/oniguruma/build/include"
           ONIG_LIBS: "$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a"
         run: |
-          source emsdk/emsdk_env.sh
+          source ./emsdk/emsdk_env.sh
           export CC=emcc
           export CXX=em++
           emconfigure ./configure \
@@ -93,13 +99,11 @@ jobs:
 
       - name: Show config.log if configure fails
         if: failure()
-        run: |
-          echo "configure failed, showing config.log:"
-          find . -name config.log -exec cat {} \;
+        run: find . -name config.log -exec cat {} \;
 
       - name: Compile PHP to WASM
         run: |
-          source emsdk/emsdk_env.sh
+          source ./emsdk/emsdk_env.sh
           emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
 
       - name: Package output into worker.js
