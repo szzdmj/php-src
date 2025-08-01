@@ -17,6 +17,37 @@ jobs:
       cd emsdk
       ./emsdk install latest
       ./emsdk activate latest
+
+- name: Export Emscripten env variables
+  shell: bash
+  run: |
+    echo "EMSDK_ENV=$GITHUB_WORKSPACE/emsdk/emsdk_env.sh" >> $GITHUB_ENV
+
+- name: Clean previous builds
+  run: |
+    git clean -xfd || true
+    make clean || true
+
+- name: Generate configure script
+  run: |
+    source "$EMSDK_ENV"
+    ./buildconf --force
+
+- name: Build libxml2 with Emscripten
+  run: |
+    source "$EMSDK_ENV"
+    git clone https://gitlab.gnome.org/GNOME/libxml2.git
+    cd libxml2
+    git checkout v2.9.14
+    emconfigure ./autogen.sh --host=wasm32-unknown-emscripten --disable-shared --without-python --disable-dependency-tracking --prefix=$(pwd)/build
+    emmake make -j$(nproc)
+    emmake make install
+
+- name: Export libxml2 paths for PHP build
+  run: |
+    echo "LIBXML_CFLAGS=-I$GITHUB_WORKSPACE/libxml2/build/include/libxml2" >> $GITHUB_ENV
+    echo "LIBXML_LIBS=$GITHUB_WORKSPACE/libxml2/build/lib/libxml2.a" >> $GITHUB_ENV
+
    - name: Export Emscripten env variables for later steps
      shell: bash
      run: |
