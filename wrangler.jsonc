@@ -1,6 +1,10 @@
 {
-  "name": "php-wasm-worker",
+  "name": "php-src-workers",
   "main": "worker.js",
   "compatibility_date": "2025-08-01",
-  "workers_dev": true
+  "workers_dev": true,
+  "rules": [
+    { "type": "Data", "globs": ["**/*.wasm"] },
+    { "type": "Text", "globs": ["**/*.php"] }
+  ]
 }
