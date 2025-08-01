@@ -71,7 +71,7 @@ jobs:
             --disable-all \
             --without-pear \
             --disable-cli \
-      --disable-opcache \
+            --disable-opcache \
             --with-libxml \
             --enable-dom \
             --enable-simplexml \
