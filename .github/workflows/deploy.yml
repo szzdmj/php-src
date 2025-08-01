@@ -101,4 +101,33 @@ jobs:
             LIBXML_LIBS="$LIBXML_LIBS" \
             ONIG_CFLAGS="$ONIG_CFLAGS" \
             ONIG_LIBS="$ONIG_LIBS" 
-            set +x
+          set +x
+      - name: Show config.log if configure fails
+        if: failure()
+        run: |
+          echo "configure failed, showing config.log:"
+          find . -name config.log -exec cat {} \;
+
+      - name: Compile PHP to WASM
+        run: |
+          source ./emsdk/emsdk_env.sh
+          emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
+
+      - name: Package output into worker.js
+        run: |
+          mkdir -p dist
+          WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
+          if [ ! -f "$WASM_FILE" ]; then echo "No .wasm file found!" && exit 1; fi
+          base64 "$WASM_FILE" > dist/php.wasm.base64
+          cat > dist/worker.js <<EOF
+          const wasmBase64 = \`${cat dist/php.wasm.base64}\`;
+          addEventListener('fetch', event => {
+          event.respondWith(new Response('PHP WASM Ready'));
+          });
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasmphp
+          path: dist/
