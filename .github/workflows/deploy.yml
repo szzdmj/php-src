@@ -61,15 +61,15 @@ jobs:
 
       - name: Configure PHP with Emscripten
         env:
-    LIBXML_CFLAGS: "-I$GITHUB_WORKSPACE/libxml2/build/include"
-    LIBXML_LIBS: "-L$GITHUB_WORKSPACE/libxml2/build/lib -lxml2"
-    ONIG_CFLAGS: "-I$GITHUB_WORKSPACE/oniguruma/build/include"
-    ONIG_LIBS: "$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a"
+          LIBXML_CFLAGS: "-I$GITHUB_WORKSPACE/libxml2/build/include"
+          LIBXML_LIBS: "-L$GITHUB_WORKSPACE/libxml2/build/lib -lxml2"
+          ONIG_CFLAGS: "-I$GITHUB_WORKSPACE/oniguruma/build/include"
+          ONIG_LIBS: "$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a"
           CFLAGS: "-O2 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker -sEXPORTED_FUNCTIONS=[_main,_php_embed_init,_php_embed_shutdown] -sEXPORTED_RUNTIME_METHODS=[cwrap,ccall]"
         run: |
           source ./emsdk/emsdk_env.sh
-    export CC=emcc
-    export CXX=em++
+          export CC=emcc
+          export CXX=em++
           emconfigure ./configure \
             --host=wasm32-unknown-emscripten \
             --disable-all \
