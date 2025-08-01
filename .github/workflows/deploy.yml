@@ -14,11 +14,6 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Install dependencies on self-hosted runner
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential autoconf bison re2c libtool pkg-config git curl
-
       - name: Setup Emscripten SDK
         run: |
           git clone https://github.com/emscripten-core/emsdk.git
@@ -42,8 +37,6 @@ jobs:
             --disable-cli \
             --enable-embed=static \
             --disable-opcache \
-            --disable-zend-opcache \
-            --without-opcache \
             --disable-jit \
             --without-libxml
 
