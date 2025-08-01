@@ -1,3 +1,24 @@
+name: Build PHP WASM for Cloudflare Workers
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, Linux, x64]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Emscripten SDK
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+
       - name: Build oniguruma with Emscripten
         run: |
           source ./emsdk/emsdk_env.sh
@@ -19,7 +40,7 @@
           git clean -xfd || true
           rm -f config.cache autom4te.cache || true
           
-      - name: Generate configure script if needed
+      - name: Generate configure script
         run: |
           if [ ! -x configure ]; then ./buildconf --force; fi
 
