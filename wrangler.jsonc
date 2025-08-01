@@ -2,18 +2,5 @@
   "name": "php-wasm-worker",
   "main": "worker.js",
   "compatibility_date": "2025-08-01",
-  "workers_dev": true,
-  "wasm_modules": {
-    "php": "./php.wasm"
-  },
-  "build": {
-    "upload": {
-      "format": "modules",
-      "rules": [
-        { "type": "ESModule", "globs": ["**/*.js"] },
-        { "type": "Data", "globs": ["**/*.php"] },
-        { "type": "Data", "globs": ["**/*.wasm"] }
-      ]
-    }
-  }
+  "workers_dev": true
 }
