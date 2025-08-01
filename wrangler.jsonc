@@ -4,9 +4,6 @@
   "compatibility_date": "2025-08-01",
   "usage_model": "bundled",
   "workers_dev": true,
-- "build": {
--   "command": "npm install"
-- },
   "wasm_modules": {
     "php": "./php.wasm"
   }
