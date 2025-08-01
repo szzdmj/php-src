@@ -1,14 +1,13 @@
 {
-  "main": "cloudflare/worker.js", // 👈 明确写出路径
+  "name": "php-wasm-worker",
+  "main": "worker.js",
   "compatibility_date": "2025-08-01",
-  "rules": [
-    { "type": "ESModule", "globs": ["**/*.js"] },
-    { "type": "Data", "globs": ["**/*.wasm"] }
-  ],
-  "build": {
-    "upload": {
-      "format": "modules",
-      "dir": "cloudflare"
-    }
-  }
+  "workers_dev": true,
+  "wasm_modules": {
+    "php": "./php.wasm"
+  },
+  "modules": [
+    { "type": "ESModule", "path": "./worker.js" },
+    { "type": "Data", "path": "./index.php" }
+  ]
 }
