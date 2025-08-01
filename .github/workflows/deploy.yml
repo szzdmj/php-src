@@ -8,6 +8,12 @@ on:
 jobs:
   build-and-deploy:
     runs-on: [self-hosted, Linux, x64]
+env:
+  EMSDK: ${{ github.workspace }}/emsdk
+  EM_CONFIG: ${{ github.workspace }}/.emscripten
+  EM_CACHE: ${{ github.workspace }}/.emscripten_cache
+  EMCC_WASM_BACKEND: 1
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -18,34 +24,30 @@ jobs:
           cd emsdk
           ./emsdk install latest
           ./emsdk activate latest
+          echo "source $PWD/emsdk_env.sh" >> $GITHUB_ENV
+
+      - name: Set environment for Emscripten
+        run: source emsdk/emsdk_env.sh
 
       - name: Build libxml2 with Emscripten
         run: |
-          source ./emsdk/emsdk_env.sh
-          git clone https://gitlab.gnome.org/GNOME/libxml2.git
+      mkdir -p libxml2/build
           cd libxml2
-          emconfigure ./autogen.sh \
-            --host=wasm32-unknown-emscripten \
-            --without-python \
-            --without-zlib \
-            --disable-shared \
-            --enable-static \
-            --prefix=$(pwd)/build
+      curl -LO https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.11.7/libxml2-v2.11.7.tar.gz
+      tar -xzf libxml2-v2.11.7.tar.gz --strip-components=1
+      emconfigure ./autogen.sh --disable-shared --enable-static --without-python
           emmake make -j$(nproc)
-          emmake make install
-          cd ..
+      mkdir -p build/include build/lib
+      cp -r include/libxml build/include/
+      cp .libs/libxml2.a build/lib/
 
       - name: Build oniguruma with Emscripten
         run: |
-          source ./emsdk/emsdk_env.sh
-          git clone https://github.com/kkos/oniguruma.git
+      mkdir -p oniguruma/build
           cd oniguruma
-          autoreconf -vfi
-          emconfigure ./configure \
-            --host=wasm32-unknown-emscripten \
-            --disable-shared \
-            --disable-dependency-tracking \
-            --prefix=$(pwd)/build
+      curl -LO https://github.com/kkos/oniguruma/releases/download/v6.9.9/onig-6.9.9.tar.gz
+      tar -xzf onig-6.9.9.tar.gz --strip-components=1
+      emconfigure ./configure --disable-shared --enable-static --prefix=$PWD/build
           emmake make -j$(nproc)
           emmake make install
           cd ..
@@ -55,20 +57,10 @@ jobs:
           git clean -xfd || true
           rm -f config.cache autom4te.cache || true
 
-      - name: Generate configure script
+  - name: Configure and build PHP
         run: |
-          if [ ! -x configure ]; then ./buildconf --force; fi
-
-      - name: Configure PHP with Emscripten
-        env:
-          LIBXML_CFLAGS: "-I$GITHUB_WORKSPACE/libxml2/build/include"
-          LIBXML_LIBS: "-L$GITHUB_WORKSPACE/libxml2/build/lib -lxml2"
-          ONIG_CFLAGS: "-I$GITHUB_WORKSPACE/oniguruma/build/include"
-          ONIG_LIBS: "$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a"
-        run: |
-          source ./emsdk/emsdk_env.sh
-          export CC=emcc
-          export CXX=em++
+      cd php-src
+      ./buildconf --force
           emconfigure ./configure \
             --host=wasm32-unknown-emscripten \
             --disable-all \
@@ -87,11 +79,12 @@ jobs:
             --enable-tokenizer \
             --enable-filter \
             --enable-posix \
-            LIBXML_CFLAGS="$LIBXML_CFLAGS" \
-            LIBXML_LIBS="$LIBXML_LIBS" \
-            ONIG_CFLAGS="$ONIG_CFLAGS" \
-            ONIG_LIBS="$ONIG_LIBS" \
-            --cache-file=config.cache
+         LIBXML_CFLAGS="-I$GITHUB_WORKSPACE/libxml2/build/include" \
+        LIBXML_LIBS="-L$GITHUB_WORKSPACE/libxml2/build/lib -lxml2" \
+        ONIG_CFLAGS="-I$GITHUB_WORKSPACE/oniguruma/build/include" \
+        ONIG_LIBS="$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a"
+      emmake make -j$(nproc)
+
 
       - name: Show config.log if configure fails
         if: failure()
