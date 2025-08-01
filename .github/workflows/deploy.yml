@@ -59,7 +59,7 @@ jobs:
       - name: Clean previous builds
         run: |
           git clean -xfd || true
-          make clean || true
+          if [ -f Makefile ]; then make clean || true; fi
           rm -rf config.cache autom4te.cache || true
 
       - name: Generate configure script
