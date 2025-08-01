@@ -1,99 +1,103 @@
 name: Build PHP WASM for Cloudflare Workers
 
 on:
- push:
-  branches: [ master ]
- workflow_dispatch:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
-   runs-on: [self-hosted, Linux, x64]
-   steps:
-   - name: Checkout source
-     uses: actions/checkout@v4
-   - name: Set up Emscripten SDK
-     run: |
-      git clone https://github.com/emscripten-core/emsdk.git
-      cd emsdk
-      ./emsdk install latest
-      ./emsdk activate latest
-      echo "source $PWD/emsdk_env.sh" >> $GITHUB_ENV
-   - name: Build libxml2 with Emscripten
-     run: |
-       source ./emsdk/emsdk_env.sh
-       git clone https://gitlab.gnome.org/GNOME/libxml2.git
-       cd libxml2
-       git checkout v2.9.14
-       emconfigure ./autogen.sh \
-       --host=wasm32-unknown-emscripten \
-       --disable-shared \
-       --without-python \
-       --disable-dependency-tracking \
-       --prefix=$(pwd)/build
-       emmake make -j$(nproc)
-       emmake make install
+    runs-on: [self-hosted, Linux, x64]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-   - name: Export libxml2 paths for PHP build
-     run: |
-       echo "LIBXML_CFLAGS=-I$GITHUB_WORKSPACE/libxml2/build/include/libxml2" >> $GITHUB_ENV
-       echo "LIBXML_LIBS=$GITHUB_WORKSPACE/libxml2/build/lib/libxml2.a" >> $GITHUB_ENV
+      - name: Set up Emscripten SDK
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
 
-   - name: Clean previous builds
-     run: |
-       git clean -xfd || true
-       make clean || true
+      - name: Build libxml2 with Emscripten
+        run: |
+          source ./emsdk/emsdk_env.sh
+          git clone https://gitlab.gnome.org/GNOME/libxml2.git
+          cd libxml2
+          git checkout v2.9.14
+          emconfigure ./autogen.sh \
+            --host=wasm32-unknown-emscripten \
+            --disable-shared \
+            --without-python \
+            --disable-dependency-tracking \
+            --prefix=$(pwd)/build
+          emmake make -j$(nproc)
+          emmake make install
 
-   - name: Generate configure script
-     run: |
-      source ./emsdk/emsdk_env.sh
-      ./buildconf --force
-     
-   - name: Configure PHP with Emscripten
-     run: |
-      source ./emsdk/emsdk_env.sh
-      emconfigure ./configure \
-      --disable-all \
-         --without-pear \
-         --disable-cli \
-         --with-libxml \
-         --enable-dom \
-         --enable-simplexml \
-         --enable-xml \
-         --enable-xmlreader \
-         --enable-xmlwriter \
-         --enable-session \
-         --enable-mbstring \
-         --enable-json \
-         --enable-tokenizer \
-         --enable-filter \
-         --enable-hash \
-         --enable-posix \
-         LIBXML_CFLAGS="$LIBXML_CFLAGS" \
-         LIBXML_LIBS="$LIBXML_LIBS"
-   
-   - name: Show config.log if configure fails
-     if: failure()
-     run: |
-      echo "configure failed, showing config.log:"
-      find . -name config.log -exec cat {} \;
-   
-   - name: Compile PHP to WASM
-     run: |
-      source ./emsdk/emsdk_env.sh
-      emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
-   - name: Package output into worker.js
-     run: |
-      mkdir -p dist
-      WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
-      if [ ! -f "$WASM_FILE" ]; then echo "No .wasm file found!" && exit 1; fi
-      base64 "$WASM_FILE" > dist/php.wasm.base64
-      echo "// Minimal Cloudflare Worker" > dist/worker.js
-      echo "const wasmBase64 = \`$(cat dist/php.wasm.base64)\`;" >> dist/worker.js
-      echo 'addEventListener("fetch", event => {' >> dist/worker.js
-      echo '  event.respondWith(new Response("PHP WASM Ready"))' >> dist/worker.js
-      echo '});' >> dist/worker.js
-   - name: Upload artifact
-     uses: actions/upload-artifact@v4
-     with:
+      - name: Export libxml2 paths for PHP build
+        run: |
+          echo "LIBXML_CFLAGS=-I$GITHUB_WORKSPACE/libxml2/build/include/libxml2" >> $GITHUB_ENV
+          echo "LIBXML_LIBS=$GITHUB_WORKSPACE/libxml2/build/lib/libxml2.a" >> $GITHUB_ENV
+
+      - name: Clean previous builds
+        run: |
+          git clean -xfd || true
+          make clean || true
+
+      - name: Generate configure script
+        run: |
+          source ./emsdk/emsdk_env.sh
+          ./buildconf --force
+
+      - name: Configure PHP with Emscripten
+        env:
+          LIBXML_CFLAGS: ${{ env.LIBXML_CFLAGS }}
+          LIBXML_LIBS: ${{ env.LIBXML_LIBS }}
+        run: |
+          source ./emsdk/emsdk_env.sh
+          emconfigure ./configure \
+            --disable-all \
+            --without-pear \
+            --disable-cli \
+            --with-libxml \
+            --enable-dom \
+            --enable-simplexml \
+            --enable-xml \
+            --enable-xmlreader \
+            --enable-xmlwriter \
+            --enable-session \
+            --enable-mbstring \
+            --enable-json \
+            --enable-tokenizer \
+            --enable-filter \
+            --enable-hash \
+            --enable-posix
+
+      - name: Show config.log if configure fails
+        if: failure()
+        run: |
+          echo "configure failed, showing config.log:"
+          find . -name config.log -exec cat {} \;
+
+      - name: Compile PHP to WASM
+        run: |
+          source ./emsdk/emsdk_env.sh
+          emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
+
+      - name: Package output into worker.js
+        run: |
+          mkdir -p dist
+          WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
+          if [ ! -f "$WASM_FILE" ]; then echo "No .wasm file found!" && exit 1; fi
+          base64 "$WASM_FILE" > dist/php.wasm.base64
+          echo "// Minimal Cloudflare Worker" > dist/worker.js
+          echo "const wasmBase64 = \`$(cat dist/php.wasm.base64)\`;" >> dist/worker.js
+          echo 'addEventListener("fetch", event => {' >> dist/worker.js
+          echo '  event.respondWith(new Response("PHP WASM Ready"))' >> dist/worker.js
+          echo '});' >> dist/worker.js
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
           name: wasmphp
           path: dist/
