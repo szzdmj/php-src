@@ -67,13 +67,17 @@ jobs:
           ONIG_LIBS: ${{ env.ONIG_LIBS }}
           CFLAGS: "-O2 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker -sEXPORTED_FUNCTIONS=[_main,_php_embed_init,_php_embed_shutdown] -sEXPORTED_RUNTIME_METHODS=[cwrap,ccall]"
         run: |
+          set -x
           source ./emsdk/emsdk_env.sh
-          export CC=emcc
-          export CXX=em++
+          export CC="$EMSDK/upstream/emscripten/emcc"
+          export CXX="$EMSDK/upstream/emscripten/em++"
           export ac_cv_header_minix_config_h=no
           export ac_cv_file__dev_ptmx=no
           export ac_cv_file__dev_ptc=no
-          emconfigure ./configure
+          export ac_cv_func_malloc_0_nonnull=yes
+          export ac_cv_func_realloc_0_nonnull=yes
+          export ac_cv_func_opendir=yes
+          export ac_cv_func_closedir=yes
           emconfigure ./configure \
             --host=wasm32-unknown-emscripten \
             --disable-all \
@@ -97,32 +101,4 @@ jobs:
             LIBXML_LIBS="$LIBXML_LIBS" \
             ONIG_CFLAGS="$ONIG_CFLAGS" \
             ONIG_LIBS="$ONIG_LIBS" 
-      - name: Show config.log if configure fails
-        if: failure()
-        run: |
-          echo "configure failed, showing config.log:"
-          find . -name config.log -exec cat {} \;
-
-      - name: Compile PHP to WASM
-        run: |
-          source ./emsdk/emsdk_env.sh
-          emmake make -j$(nproc) > build.log 2>&1 || (cat build.log && false)
-
-      - name: Package output into worker.js
-        run: |
-          mkdir -p dist
-          WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
-          if [ ! -f "$WASM_FILE" ]; then echo "No .wasm file found!" && exit 1; fi
-          base64 "$WASM_FILE" > dist/php.wasm.base64
-          cat > dist/worker.js <<EOF
-          const wasmBase64 = \`${cat dist/php.wasm.base64}\`;
-          addEventListener('fetch', event => {
-          event.respondWith(new Response('PHP WASM Ready'));
-          });
-          EOF
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: wasmphp
-          path: dist/
+            set +x
