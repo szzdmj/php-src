@@ -4,15 +4,16 @@ import indexPhp from 'Static_Creation/public/index.php';
 
 export default {
   async fetch(request, env, ctx) {
-    const { instance } = await WebAssembly.instantiate(phpWasm, {
-      env: {
-        // 这里可以根据需要添加导入的函数，如 memory, table, imports 等
-      }
-    });
+    const wasmModule = await WebAssembly.compile(phpWasm);
+    // 这里需要根据 embed SAPI 初始化 PHP 执行环境
+    // 假设您有 Embed API 的 glue code
+    const instance = await WebAssembly.instantiate(wasmModule, {/* imports */});
 
-    // 简单示例：返回 index.php 文件内容
-    return new Response(indexPhp, {
-      headers: { 'Content-Type': 'text/html' }
+    // 运行 PHP 处理请求
+    const result = instance.exports.runPhp(indexPhp);
+
+    return new Response(result, {
+      headers: { 'content-type': 'text/html' }
     });
   }
 };
