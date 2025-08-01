@@ -1,2 +1,2 @@
 <?php
-echo "PHP via Cloudflare Workers (wasm) is running!";
+echo "Hello from PHP on Cloudflare Workers!
