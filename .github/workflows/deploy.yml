@@ -18,6 +18,7 @@ jobs:
           cd emsdk
           ./emsdk install latest
           ./emsdk activate latest
+      echo "source $PWD/emsdk_env.sh" >> $GITHUB_ENV
 
       - name: Build libxml2 with Emscripten
         run: |
@@ -39,6 +40,21 @@ jobs:
           echo "LIBXML_CFLAGS=-I$GITHUB_WORKSPACE/libxml2/build/include/libxml2" >> $GITHUB_ENV
           echo "LIBXML_LIBS=$GITHUB_WORKSPACE/libxml2/build/lib/libxml2.a" >> $GITHUB_ENV
 
+      - name: Build oniguruma for Emscripten
+        run: |
+          source ./emsdk/emsdk_env.sh
+          git clone https://github.com/kkos/oniguruma.git
+          cd oniguruma
+          ./autogen.sh
+          emconfigure ./configure --host=wasm32-unknown-emscripten --disable-shared --prefix=$(pwd)/build
+          emmake make -j$(nproc)
+          emmake make install
+
+      - name: Export oniguruma paths for PHP
+        run: |
+          echo "ONIG_CFLAGS=-I$GITHUB_WORKSPACE/oniguruma/build/include" >> $GITHUB_ENV
+          echo "ONIG_LIBS=$GITHUB_WORKSPACE/oniguruma/build/lib/libonig.a" >> $GITHUB_ENV
+
       - name: Clean previous builds
         run: |
           git clean -xfd || true
@@ -50,9 +66,6 @@ jobs:
           ./buildconf --force
 
       - name: Configure PHP with Emscripten
-        env:
-          LIBXML_CFLAGS: ${{ env.LIBXML_CFLAGS }}
-          LIBXML_LIBS: ${{ env.LIBXML_LIBS }}
         run: |
           source ./emsdk/emsdk_env.sh
           emconfigure ./configure \
@@ -71,7 +84,11 @@ jobs:
             --enable-tokenizer \
             --enable-filter \
             --enable-hash \
-            --enable-posix
+        --enable-posix \
+        LIBXML_CFLAGS="$LIBXML_CFLAGS" \
+        LIBXML_LIBS="$LIBXML_LIBS" \
+        ONIG_CFLAGS="$ONIG_CFLAGS" \
+        ONIG_LIBS="$ONIG_LIBS"
 
       - name: Show config.log if configure fails
         if: failure()
