@@ -1,23 +1,13 @@
 {
-  "name": "php-src-workers",
-  "compatibility_date": "2025-07-30",
-
-  // 如果你使用的是 Node 模块方式导入（例如 import { createPHP } from "@php-wasm/web"）
-  "compatibility_flags": ["nodejs_compat"],
-
-  "main": "src/index.ts",
-  "build": {
-    "command": "bun install && bun run build" // 若不需构建，可删除此字段
-  },
-
-  // 开发时可以用 `wrangler dev`
-  "dev": {
-    "port": 8787
-  },
-
-  // 如果你计划使用 Durable Objects 或 KV，可补充如下配置：
-  // "kv_namespaces": [...],
-  // "durable_objects": { ... }
-
-  "tsconfig": "./tsconfig.json"
+  "name": "php-wasm-worker",
+  "main": "worker.js",
+  "compatibility_date": "2025-08-01",
+  "usage_model": "bundled",
+  "workers_dev": true,
+- "build": {
+-   "command": "npm install"
+- },
+  "wasm_modules": {
+    "php": "./php.wasm"
+  }
 }
