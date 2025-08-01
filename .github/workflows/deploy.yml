@@ -13,8 +13,7 @@ jobs:
       EM_CONFIG: ${{ github.workspace }}/.emscripten
       EM_CACHE: ${{ github.workspace }}/.emscripten_cache
       EMCC_WASM_BACKEND: 1
-
-  steps:
+    steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
