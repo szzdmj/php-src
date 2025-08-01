@@ -1,5 +1,5 @@
 import phpWasm from './php.wasm';
-import indexPhp from '../Static_Creation/public/index.php';
+import indexPhp from 'Static_Creation/public/index.php';
 
 export default {
   async fetch(request, env, ctx) {
