@@ -33,6 +33,7 @@ jobs:
             --prefix=$(pwd)/build
           emmake make -j$(nproc)
           emmake make install
+          cd ..
 
       - name: Export libxml2 paths for PHP build
         run: |
@@ -48,6 +49,7 @@ jobs:
           emconfigure ./configure --host=wasm32-unknown-emscripten --disable-shared --prefix=$(pwd)/build
           emmake make -j$(nproc)
           emmake make install
+          cd ..
 
       - name: Export oniguruma paths for PHP
         run: |
@@ -58,7 +60,7 @@ jobs:
         run: |
           git clean -xfd || true
           make clean || true
-          rm -rf config.cache autom4te.cache
+          rm -rf config.cache autom4te.cache || true
 
       - name: Generate configure script
         run: |
@@ -66,6 +68,11 @@ jobs:
           ./buildconf --force
 
       - name: Configure PHP with Emscripten
+        env:
+          LIBXML_CFLAGS: ${{ env.LIBXML_CFLAGS }}
+          LIBXML_LIBS: ${{ env.LIBXML_LIBS }}
+          ONIG_CFLAGS: ${{ env.ONIG_CFLAGS }}
+          ONIG_LIBS: ${{ env.ONIG_LIBS }}
         run: |
           source ./emsdk/emsdk_env.sh
           emconfigure ./configure \
@@ -76,6 +83,7 @@ jobs:
             --disable-phpdbg \
             --without-pear \
             --with-libxml \
+            --enable-embed=static \
             --enable-dom \
             --enable-simplexml \
             --enable-xml \
@@ -110,15 +118,16 @@ jobs:
           WASM_FILE=$(find sapi -name '*.wasm' | head -n1)
           if [ ! -f "$WASM_FILE" ]; then echo "No .wasm file found!" && exit 1; fi
           base64 "$WASM_FILE" > dist/php.wasm.base64
-          echo "// Minimal Cloudflare Worker" > dist/worker.js
-          echo "const wasmBase64 = \`$(cat dist/php.wasm.base64)\`;" >> dist/worker.js
-          echo 'addEventListener("fetch", event => {' >> dist/worker.js
-          echo '  event.respondWith(new Response("PHP WASM Ready"))' >> dist/worker.js
-          echo '});' >> dist/worker.js
+          # 这里简单写个 Worker 脚本演示，正常用时你需要写完整 wasm 实例加载和调用逻辑
+          cat > dist/worker.js <<EOF
+const wasmBase64 = \`${cat dist/php.wasm.base64}\`;
+addEventListener('fetch', event => {
+  event.respondWith(new Response('PHP WASM Ready'));
+});
+EOF
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: wasmphp
           path: dist/
-
