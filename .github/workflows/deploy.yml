@@ -6,17 +6,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: [self-hosted, Linux, x64]
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential autoconf bison re2c libtool pkg-config git curl
 
       - name: Set up Emscripten SDK
         run: |
@@ -24,71 +19,47 @@ jobs:
           cd emsdk
           ./emsdk install latest
           ./emsdk activate latest
+          echo "EMSDK=$PWD" >> $GITHUB_ENV
+          echo "EMSCRIPTEN=$PWD/upstream/emscripten" >> $GITHUB_ENV
+          echo "$PWD:$PWD/upstream/emscripten" >> $GITHUB_PATH
 
-      - name: Clone libxml2
+      - name: Set environment variables for Emscripten
         run: |
-          git clone https://gitlab.gnome.org/GNOME/libxml2.git
+          echo "PATH=$EMSDK:$EMSCRIPTEN:$PATH" >> $GITHUB_ENV
+          echo "EMSDK_NODE=$EMSDK/node/22.16.0_64bit/bin/node" >> $GITHUB_ENV
+          echo "EM_CONFIG=$EMSDK/.emscripten" >> $GITHUB_ENV
+          echo "EM_CACHE=$EMSDK/.emscripten_cache" >> $GITHUB_ENV
+
+      - name: Clone libxml2 (if not exists)
+        run: |
+          if [ ! -d "libxml2" ]; then
+            git clone https://github.com/GNOME/libxml2.git
+          fi
+
+      - name: Configure libxml2
+        run: |
           cd libxml2
-          mkdir build
-          cd build
-          source ../../emsdk/emsdk_env.sh
-          emcmake cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DWITH_ZLIB=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$(pwd)/install
-          emmake make -j$(nproc)
-          emmake make install
+          if [ ! -f "Makefile" ]; then
+            ./autogen.sh --without-zlib
+          fi
 
-      - name: Clone oniguruma
+      - name: Build libxml2 with emconfigure/emmake
         run: |
-          git clone https://github.com/kkos/oniguruma.git
-          cd oniguruma
-          mkdir build
-          cd build
-          source ../../emsdk/emsdk_env.sh
-          emcmake cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$(pwd)/install
+          cd libxml2
+          emconfigure ./configure --without-zlib
           emmake make -j$(nproc)
-          emmake make install
-
-      - name: Configure PHP
-        run: |
-          source ./emsdk/emsdk_env.sh
-          ./buildconf --force
-          emconfigure ./configure \
-            --disable-all \
-            --disable-cli \
-            --disable-cgi \
-            --disable-opcache \
-            --disable-phpdbg \
-            --without-pear \
-            --with-libxml \
-            --enable-embed=static \
-            --enable-dom \
-            --enable-simplexml \
-            --enable-xml \
-            --enable-xmlreader \
-            --enable-xmlwriter \
-            --enable-session \
-            --enable-mbstring \
-            --enable-json \
-            --enable-tokenizer \
-            --enable-filter \
-            --enable-hash \
-            --enable-posix \
-            LIBXML_CFLAGS="-I$(pwd)/libxml2/build/install/include/libxml2" \
-            LIBXML_LIBS="$(pwd)/libxml2/build/install/lib/libxml2.a" \
-            ONIG_CFLAGS="-I$(pwd)/oniguruma/build/install/include" \
-            ONIG_LIBS="$(pwd)/oniguruma/build/install/lib/libonig.a"
 
       - name: Build PHP
         run: |
-          source ./emsdk/emsdk_env.sh
+          ./buildconf --force
+          emconfigure ./configure \
+            --host=wasm32-unknown-emscripten \
+            --disable-all \
+            --disable-cli \
+            --enable-embed=static \
+            --with-libxml-dir=$(pwd)/libxml2
           emmake make -j$(nproc)
 
-      - name: Build Worker Output
+      - name: Post-build steps
         run: |
-          mkdir -p dist
-          cp sapi/embed/php.wasm dist/
-          # 可以添加构建 Worker 脚本逻辑，如 glue.js 等
-
-      # 可选部署步骤
-      # - name: Deploy to Cloudflare Workers
-      #   run: |
-      #     wrangler publish
+          echo "Build complete"
