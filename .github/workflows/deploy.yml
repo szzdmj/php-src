@@ -72,6 +72,7 @@ jobs:
             --without-pear \
             --disable-cli \
             --disable-opcache \
+            --disable-phpdbg
             --with-libxml \
             --enable-dom \
             --enable-simplexml \
