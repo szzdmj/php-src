@@ -68,12 +68,12 @@ jobs:
           CFLAGS: "-O2 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker -sEXPORTED_FUNCTIONS=[_main,_php_embed_init,_php_embed_shutdown] -sEXPORTED_RUNTIME_METHODS=[cwrap,ccall]"
         run: |
           source ./emsdk/emsdk_env.sh
-export CC=emcc
-export CXX=em++
-export ac_cv_header_minix_config_h=no
-export ac_cv_file__dev_ptmx=no
-export ac_cv_file__dev_ptc=no
-emconfigure ./configure
+          export CC=emcc
+          export CXX=em++
+          export ac_cv_header_minix_config_h=no
+          export ac_cv_file__dev_ptmx=no
+          export ac_cv_file__dev_ptc=no
+          emconfigure ./configure
           emconfigure ./configure \
             --host=wasm32-unknown-emscripten \
             --disable-all \
