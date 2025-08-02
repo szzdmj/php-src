@@ -1,7 +1,8 @@
 {
   "name": "php-src-workers",
-  "account_id": "ced06d7d7bc5c6126a23166c724068b1",
   "main": "worker.js",
-  "compatibility_date": "2025-08-01",
-  "workers_dev": true
+  "compatibility_date": "2024-08-01",
+  "modules": [
+    { "type": "Data", "path": "./cloudflare/php.wasm", "name": "phpWasm" }
+  ]
 }
