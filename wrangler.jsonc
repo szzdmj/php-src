@@ -6,8 +6,7 @@
     "upload": {
       "format": "modules",
       "rules": [
-        { "type": "Data", "globs": ["cloudflare/php.wasm"] },
-        { "type": "Text", "globs": ["**/*.php"] }
+        { "type": "Data", "globs": ["cloudflare/php.wasm"] }
       ]
     }
   }
