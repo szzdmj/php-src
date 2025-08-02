@@ -1,10 +1,7 @@
 {
   "name": "php-src-workers",
+  "account_id": "ced06d7d7bc5c6126a23166c724068b1",
   "main": "worker.js",
   "compatibility_date": "2025-08-01",
-  "workers_dev": true,
-  "rules": [
-    { "type": "Data", "globs": ["**/*.wasm"] },
-    { "type": "Text", "globs": ["**/*.php"] }
-  ]
+  "workers_dev": true
 }
