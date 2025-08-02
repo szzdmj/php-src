@@ -1,15 +1,18 @@
-// worker.js
-import phpWasm from 'cloudflare/php.wasm';
-import indexPhp from './Static_Creation/public/index.php';
-
 export default {
   async fetch(request, env, ctx) {
-    const wasmModule = await WebAssembly.compile(phpWasm);
-    // 这里需要根据 embed SAPI 初始化 PHP 执行环境
-    // 假设您有 Embed API 的 glue code
+    // Load wasm binary
+    const wasmResponse = await fetch(new URL('cloudflare/php.wasm', import.meta.url));
+    const wasmBinary = await wasmResponse.arrayBuffer();
+    const wasmModule = await WebAssembly.compile(wasmBinary);
+
+    // Load index.php content (from KV or URL)
+    const phpResponse = await fetch(new URL('Static_Creation/public/index.php', import.meta.url));
+    const indexPhp = await phpResponse.text();
+
+    // Initialize wasm instance (imports need to match Embed API)
     const instance = await WebAssembly.instantiate(wasmModule, {/* imports */});
 
-    // 运行 PHP 处理请求
+    // Run PHP code (runPhp 是 wasm 导出函数)
     const result = instance.exports.runPhp(indexPhp);
 
     return new Response(result, {
