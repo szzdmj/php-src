@@ -1,6 +1,11 @@
+import phpWasm from 'cloudflare/php.wasm';
+
 export default {
   async fetch(request, env, ctx) {
-    return new Response("PHP wasm Worker is alive!", {
+    const wasmModule = await WebAssembly.compile(phpWasm);
+    const instance = await WebAssembly.instantiate(wasmModule, { /* empty imports for now */ });
+
+    return new Response("WASM loaded & instantiated!", {
       headers: { 'content-type': 'text/plain' }
     });
   }
