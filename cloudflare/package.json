@@ -1,7 +1,14 @@
 {
-  "type": "module",
-  "scripts": {
-    "start": "wrangler dev"
-  },
-  "devDependencies": {}
+  "name": "php-src-workers",
+  "main": "worker.js",
+  "compatibility_date": "2024-08-01",
+  "build": {
+    "upload": {
+      "format": "modules",
+      "rules": [
+        { "type": "Data", "globs": ["cloudflare/php.wasm"] },
+        { "type": "Text", "globs": ["**/*.php"] }
+      ]
+    }
+  }
 }
