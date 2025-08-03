@@ -1,4 +1,4 @@
-name: Build Optimized PHP WASM for Cloudflare Workers
+name: Build PHP WASM with mbstring for Cloudflare Workers
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout source
+      - name: Checkout PHP source
         uses: actions/checkout@v4
 
       - name: Setup Emscripten SDK
@@ -23,6 +23,17 @@ jobs:
           source ./emsdk_env.sh
           cd ..
 
+      - name: Clone and Build Oniguruma for Emscripten
+        run: |
+          git clone https://github.com/kkos/oniguruma.git
+          cd oniguruma
+          source ../emsdk/emsdk_env.sh
+          emcmake cmake -Bbuild
+          emmake make -C build
+          echo "ONIG_CFLAGS=-I$(pwd)/build" >> $GITHUB_ENV
+          echo "ONIG_LIBS=$(pwd)/build/libonig.a" >> $GITHUB_ENV
+          cd ..
+
       - name: Disable OPCache in source
         run: |
           sed -i '/PHP_ARG_ENABLE(opcache/,/^$/ s/^/#/' ext/opcache/config.m4
@@ -32,7 +43,10 @@ jobs:
           source emsdk/emsdk_env.sh
           ./buildconf --force
 
-      - name: Configure PHP for Emscripten WASM build (with extensions)
+      - name: Configure PHP for Emscripten WASM build (with mbstring)
+        env:
+          ONIG_CFLAGS: ${{ env.ONIG_CFLAGS }}
+          ONIG_LIBS: ${{ env.ONIG_LIBS }}
         run: |
           source emsdk/emsdk_env.sh
           emconfigure ./configure \
@@ -40,11 +54,9 @@ jobs:
             --disable-all \
             --disable-cli \
             --enable-embed=static \
-            --enable-json \
             --enable-mbstring \
             --enable-session \
             --enable-filter \
-            --enable-hash \
             --enable-tokenizer \
             --without-libxml
 
