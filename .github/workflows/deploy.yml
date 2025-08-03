@@ -34,11 +34,11 @@ jobs:
           echo "ONIG_LIBS=$(pwd)/build/libonig.a" >> $GITHUB_ENV
           cd ..
 
-      - name: Disable OPCache in source (MUST be before configure)
+      - name: Disable OPCache in PHP source
         run: |
           sed -i '/PHP_ARG_ENABLE(opcache/,/^$/ s/^/#/' ext/opcache/config.m4
 
-      - name: Clean previous builds and regenerate configuration
+      - name: Clean previous build and regenerate configuration
         run: |
           make distclean || true
           source emsdk/emsdk_env.sh
