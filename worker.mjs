@@ -1,24 +1,12 @@
 export default {
   async fetch(request, env, ctx) {
-    try {
-      const wasmModule = await WebAssembly.instantiateStreaming(fetch('/php.wasm'));
-      const wasmResponse = await fetch(wasmUrl);
-      const wasmArrayBuffer = await wasmResponse.arrayBuffer();
-      const wasmModule = await WebAssembly.compile(wasmArrayBuffer);
-      const instance = await WebAssembly.instantiate(wasmModule, {
-        env: {
-          memory: new WebAssembly.Memory({ initial: 256 }),
-        },
-      });
+    const wasmResponse = await fetch(new URL('./php.wasm', import.meta.url));
+    const wasmArrayBuffer = await wasmResponse.arrayBuffer();
 
-      return new Response('PHP wasm loaded successfully!', {
-        headers: { 'Content-Type': 'text/plain' },
-      });
-    } catch (e) {
-      return new Response('WASM load error: ' + e.message, {
-        status: 500,
-        headers: { 'Content-Type': 'text/plain' },
-      });
-    }
+    // 只用 instantiate，不要 compile 再 instantiate
+    const { instance } = await WebAssembly.instantiate(wasmArrayBuffer, {});
+
+    // 这里可以调用 wasm 导出的方法
+    return new Response("WASM Loaded Successfully", { status: 200 });
   }
 };
