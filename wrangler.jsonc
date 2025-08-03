@@ -3,7 +3,10 @@
   "main": "worker.mjs",
   "compatibility_date": "2025-08-03",
   "rules": [
-    { "type": "ESModule", "globs": ["**/*.mjs"] },
-    { "type": "CompiledWasm", "globs": ["php.wasm"] }
+    {
+      "type": "CompiledWasm",
+      "globs": ["php.wasm"],
+      "fallthrough": true
+    }
   ]
 }
