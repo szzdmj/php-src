@@ -3,7 +3,7 @@
   "main": "worker.mjs",
   "compatibility_date": "2025-08-01",
   "assets": {
-    "directory": "./"
+    "directory": "./cloudflare"
   },
   "rules": [
     { "type": "ESModule", "globs": ["**/*.mjs"] },
