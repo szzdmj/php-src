@@ -40,7 +40,7 @@ jobs:
 
       - name: Disable OPCache in PHP source
         run: |
-          # Disable opcache before configuring!
+          # Comment out opcache macro in config.m4 to prevent shared memory errors
           sed -i '/PHP_ARG_ENABLE(opcache/,/^$/ s/^/#/' ext/opcache/config.m4
 
       - name: Clean previous build and regenerate configuration
