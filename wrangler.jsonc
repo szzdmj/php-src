@@ -1,9 +1,17 @@
 {
   "name": "php-src-workers",
   "main": "./worker.mjs",
-  "assets": "./cloudflare",
-  "modules": [
-    { "type": "ESModule", "path": "./worker.mjs" },
-    { "type": "Data", "path": "./cloudflare/php.wasm" }
-  ]
+  "assets": {
+    "directory": "./cloudflare"
+  },
+  "build": {
+    "upload": {
+      "format": "modules",
+      "dir": "./cloudflare",
+      "rules": [
+        { "type": "ESModule", "globs": ["**/*.mjs"] },
+        { "type": "Data", "globs": ["**/*.wasm"] }
+      ]
+    }
+  }
 }
