@@ -1,6 +1,5 @@
 {
   "name": "php-src-workers",
-  "main": "worker.js",
-  "compatibility_date": "2025-08-01",
-  "modules": true
+  "main": "./worker.mjs",
+  "compatibility_date": "2025-08-01"
 }
