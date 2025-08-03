@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env, ctx) {
     try {
-      const wasmUrl = new URL('./cloudflare/php.wasm', import.meta.url);
+      const wasmUrl = new URL('./php.wasm', import.meta.url);
       const wasmResponse = await fetch(wasmUrl);
       const wasmArrayBuffer = await wasmResponse.arrayBuffer();
       const wasmModule = await WebAssembly.compile(wasmArrayBuffer);
