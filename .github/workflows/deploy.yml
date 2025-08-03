@@ -14,7 +14,7 @@ jobs:
       - name: Checkout PHP repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake bison re2c autoconf automake libtool pkg-config wget tar
@@ -40,6 +40,7 @@ jobs:
 
       - name: Disable OPCache in PHP source
         run: |
+          # Disable opcache before configuring!
           sed -i '/PHP_ARG_ENABLE(opcache/,/^$/ s/^/#/' ext/opcache/config.m4
 
       - name: Clean previous build and regenerate configuration
