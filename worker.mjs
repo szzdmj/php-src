@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env, ctx) {
     try {
-      const wasmUrl = new URL('./php.wasm', import.meta.url);
+      const wasmModule = await WebAssembly.instantiateStreaming(fetch('/php.wasm'));
       const wasmResponse = await fetch(wasmUrl);
       const wasmArrayBuffer = await wasmResponse.arrayBuffer();
       const wasmModule = await WebAssembly.compile(wasmArrayBuffer);
