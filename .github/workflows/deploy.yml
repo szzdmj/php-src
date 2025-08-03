@@ -30,7 +30,7 @@ jobs:
           source ../emsdk/emsdk_env.sh
           emcmake cmake -Bbuild
           emmake make -C build
-          echo "ONIG_CFLAGS=-I$(pwd)/build" >> $GITHUB_ENV
+          echo "ONIG_CFLAGS=-I$(pwd)/src" >> $GITHUB_ENV
           echo "ONIG_LIBS=$(pwd)/build/libonig.a" >> $GITHUB_ENV
           cd ..
 
