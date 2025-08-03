@@ -2,7 +2,5 @@
   "name": "php-src-workers",
   "main": "worker.js",
   "compatibility_date": "2025-08-01",
-  "site": {
-    "bucket": "./Static_Creation/public"
-  }
+  "modules": true
 }
