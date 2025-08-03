@@ -1,12 +1,8 @@
 {
   "name": "php-src-workers",
-  "compatibility_date": "2025-08-01",
   "main": "worker.js",
-  "build": {
-    "command": "echo 'No build step required'"
-  },
-  "site": {
-    "bucket": "./Static_Creation/public",
-    "include": ["index.php"]
+  "compatibility_date": "2025-08-01",
+  "assets": {
+    "include": ["cloudflare/php.wasm", "Static_Creation/public/index.php"]
   }
 }
