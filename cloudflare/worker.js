@@ -6,12 +6,11 @@ export default {
     const wasmModule = await WebAssembly.compile(wasmArrayBuffer);
     const instance = await WebAssembly.instantiate(wasmModule, {
       env: {
-        // 这里预留必要的 imports，可逐步扩展
         memory: new WebAssembly.Memory({initial: 256}),
       }
     });
 
-    // 简单返回实例存在的消息（下一步再运行 index.php）
+    // 测试返回
     return new Response("PHP wasm Worker is alive!", {
       headers: { 'content-type': 'text/plain' }
     });
