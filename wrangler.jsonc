@@ -1,5 +1,8 @@
 {
   "name": "php-src-workers",
   "main": "worker.mjs",
-  "compatibility_date": "2025-08-03"
+  "compatibility_date": "2025-08-03",
+  "assets": {
+    "directory": "./cloudflare"
+  }
 }
