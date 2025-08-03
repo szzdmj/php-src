@@ -45,13 +45,11 @@ jobs:
 
       - name: Clean previous build and regenerate configuration
         run: |
-          source emsdk/emsdk_env.sh
           make distclean || true
           ./buildconf --force
 
       - name: Configure PHP for Emscripten WASM build
         run: |
-          source emsdk/emsdk_env.sh
           emconfigure ./configure \
             --host=wasm32-unknown-emscripten \
             --disable-all \
