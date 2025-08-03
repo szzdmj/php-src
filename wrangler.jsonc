@@ -2,7 +2,9 @@
   "name": "php-src-workers",
   "main": "worker.mjs",
   "compatibility_date": "2025-08-01",
-  "assets": "./",  // 确保 php.wasm 被作为静态资源上传
+  "assets": {
+    "directory": "./"
+  },
   "rules": [
     { "type": "ESModule", "globs": ["**/*.mjs"] },
     { "type": "Data", "globs": ["**/*.wasm"] }
