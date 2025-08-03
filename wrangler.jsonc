@@ -1,12 +1,9 @@
 {
   "name": "php-src-workers",
-  "main": "worker.mjs",
-  "compatibility_date": "2025-08-01",
-  "assets": {
-    "directory": "./cloudflare"
-  },
-  "rules": [
-    { "type": "ESModule", "globs": ["**/*.mjs"] },
-    { "type": "Data", "globs": ["**/*.wasm"] }
+  "main": "./worker.mjs",
+  "assets": "./cloudflare",
+  "modules": [
+    { "type": "ESModule", "path": "./worker.mjs" },
+    { "type": "Data", "path": "./cloudflare/php.wasm" }
   ]
 }
