@@ -25,14 +25,13 @@ jobs:
           cd emsdk
           ./emsdk install latest
           ./emsdk activate latest
-          echo "source $(pwd)/emsdk_env.sh" >> $GITHUB_ENV
           cd ..
 
       - name: Clone and Build Oniguruma for Emscripten
         run: |
+          source emsdk/emsdk_env.sh
           git clone https://github.com/kkos/oniguruma.git
           cd oniguruma
-          source ../emsdk/emsdk_env.sh
           emcmake cmake -Bbuild
           emmake make -C build
           echo "ONIG_CFLAGS=-I$(pwd)/src" >> $GITHUB_ENV
@@ -45,8 +44,8 @@ jobs:
 
       - name: Clean previous build and regenerate configuration
         run: |
-          make distclean || true
           source emsdk/emsdk_env.sh
+          make distclean || true
           ./buildconf --force
 
       - name: Configure PHP for Emscripten WASM build (with mbstring)
