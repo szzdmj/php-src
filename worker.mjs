@@ -1,8 +1,8 @@
-import wasmModule from './php.wasm';
-
 export default {
-  async fetch(request, env, ctx) {
-    const { instance } = await WebAssembly.instantiate(wasmModule, {});
-    return new Response("WASM Loaded Successfully", { status: 200 });
+  async fetch(request) {
+    const wasmUrl = new URL('./php.wasm', import.meta.url).toString();
+    const response = await fetch(wasmUrl);
+    const { instance } = await WebAssembly.instantiateStreaming(response);
+    return new Response('WASM Loaded Successfully');
   }
-};
+}
