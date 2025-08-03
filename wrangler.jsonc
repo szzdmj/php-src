@@ -1,13 +1,12 @@
 {
   "name": "php-src-workers",
+  "compatibility_date": "2025-08-01",
   "main": "worker.js",
-  "compatibility_date": "2024-08-01",
   "build": {
-    "upload": {
-      "format": "modules",
-      "rules": [
-        { "type": "Data", "globs": ["cloudflare/php.wasm"] }
-      ]
-    }
+    "command": "echo 'No build step required'"
+  },
+  "site": {
+    "bucket": "./Static_Creation/public",
+    "include": ["index.php"]
   }
 }
