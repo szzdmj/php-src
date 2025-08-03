@@ -2,11 +2,8 @@
   "name": "php-src-workers",
   "main": "worker.mjs",
   "compatibility_date": "2025-08-03",
-  "modules": [
-    {
-      "name": "PHP_WASM",
-      "type": "wasm",
-      "path": "./php.wasm"
-    }
+  "rules": [
+    { "type": "ESModule", "globs": ["**/*.mjs"] },
+    { "type": "CompiledWasm", "globs": ["php.wasm"] }
   ]
 }
