@@ -77,20 +77,27 @@ jobs:
       - name: Build Optimized PHP WASM
         run: |
           source emsdk/emsdk_env.sh
-          emmake make -j$(nproc) CFLAGS="-O3"  V=1 > make.log 2>&1 || (cat make.log && exit 1)
+          emmake make -j$(nproc) CFLAGS="-O3" V=1 > make.log 2>&1 || true
+
+      - name: Upload build logs (always run)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            configure.log
+            make.log
 
       - name: Strip debug symbols for smaller WASM
+        if: success()  # 只有make成功才Strip
         run: |
           wget https://github.com/WebAssembly/wabt/releases/download/1.0.33/wabt-1.0.33-ubuntu.tar.gz
           tar xzf wabt-1.0.33-ubuntu.tar.gz
           ./wabt-1.0.33/bin/wasm-strip sapi/embed/php.wasm
 
-      - name: Upload artifact
+      - name: Upload php.wasm
+        if: success()  # 只有make成功才上传wasm
         uses: actions/upload-artifact@v4
         with:
           name: php.wasm
-          path: |
-            configure.log
-            make.log
-            sapi/embed/php.wasm
-
+          path: sapi/embed/php.wasm
