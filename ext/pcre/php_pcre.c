@@ -13,7 +13,8 @@
    | Author: Andrei Zmievski <andrei@php.net>                             |
    +----------------------------------------------------------------------+
  */
-
+#undef HAVE_PCRE_JIT_SUPPORT
+#define PCRE2_DISABLE_JIT 1
 #include "php.h"
 #include "php_ini.h"
 #include "php_pcre.h"
