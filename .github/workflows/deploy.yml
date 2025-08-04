@@ -40,13 +40,19 @@ jobs:
 
       - name: Disable OPCache in PHP source
         run: |
-          # Comment out opcache macro in config.m4 to prevent shared memory errors
-          sed -i '/PHP_ARG_ENABLE(opcache/,/^$/ s/^/#/' ext/opcache/config.m4
+          mv ext/opcache/config.m4 ext/opcache/config.m4.bak
+          touch ext/opcache/config.m4
 
       - name: Clean previous build and regenerate configuration
         run: |
+          source emsdk/emsdk_env.sh
           make distclean || true
           ./buildconf --force
+
+      - name: Ensure OPCache stays disabled
+        run: |
+          mv ext/opcache/config.m4 ext/opcache/config.m4.bak
+          touch ext/opcache/config.m4
 
       - name: Configure PHP for Emscripten WASM build
         run: |
