@@ -72,8 +72,8 @@ jobs:
             --enable-session \
             --enable-filter \
             --enable-tokenizer \
-      --without-libxml \
-      --with-onig=$GITHUB_WORKSPACE/oniguruma/build > configure.log 2>&1
+            --without-libxml \
+            --with-onig=$GITHUB_WORKSPACE/oniguruma/build > configure.log 2>&1
           cat configure.log
 
       - name: Build Optimized PHP WASM
