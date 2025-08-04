@@ -1,4 +1,4 @@
-name: Build PHP WASM with mbstring
+name: Build PHP WASM with mbstring (patched PCRE2 JIT)
 
 on:
   push:
@@ -38,6 +38,12 @@ jobs:
         run: |
           mv ext/opcache/config.m4 ext/opcache/config.m4.bak
           touch ext/opcache/config.m4
+      - name: Patch PCRE config.m4 to exclude pcre2_jit_compile.c
+        run: |
+          sed -i '/pcre2_jit_compile.c/d' ext/pcre/config.m4
+          sed -i '/pcre2_jit_compile.c/d' ext/pcre/config0.m4 || true
+          sed -i '/pcre2_jit_compile.c/d' ext/pcre/config.w32 || true
+          echo "Patched config.m4 to exclude pcre2_jit_compile.c"
 
       - name: Clean previous build and force regenerate configure
         run: |
@@ -47,10 +53,10 @@ jobs:
           ./buildconf --force
           ls -l configure  # 检查有 configure 文件
 
-      - name: Remove PCRE2 JIT source files
-        run: |
-          rm -f ext/pcre/pcre2lib/pcre2_jit_compile.c
-          rm -rf ext/pcre/pcre2lib/sljit
+#      - name: Remove PCRE2 JIT source files
+ #       run: |
+ #         rm -f ext/pcre/pcre2lib/pcre2_jit_compile.c
+#          rm -rf ext/pcre/pcre2lib/sljit
 
 
       - name: Configure PHP for Emscripten WASM build
@@ -66,14 +72,12 @@ jobs:
             --enable-session \
             --enable-filter \
             --enable-tokenizer \
-            --without-libxml \
-            --disable-pcre-jit > configure.log 2>&1
+            --without-libxml > configure.log 2>&1
           cat configure.log
 
       - name: Build Optimized PHP WASM
         run: |
           source emsdk/emsdk_env.sh
-          emmake make -j$(nproc) CFLAGS="-O3" V=1 > make.log 2>&1 || true
           emmake make -j$(nproc) CFLAGS="-O3" V=1 > make.log 2>&1 || (cat make.log && exit 1)
 
       - name: Upload build logs (always run)
