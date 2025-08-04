@@ -38,12 +38,12 @@ jobs:
         run: |
           mv ext/opcache/config.m4 ext/opcache/config.m4.bak
           touch ext/opcache/config.m4
-      - name: Patch PCRE config.m4 to exclude pcre2_jit_compile.c
+      - name: Patch PCRE config0.m4 to exclude pcre2_jit_compile.c
         run: |
-          sed -i '/pcre2_jit_compile.c/d' ext/pcre/config.m4
+          sed -i '/pcre2_jit_compile.c/d' ext/pcre/config0.m4
           sed -i '/pcre2_jit_compile.c/d' ext/pcre/config0.m4 || true
           sed -i '/pcre2_jit_compile.c/d' ext/pcre/config.w32 || true
-          echo "Patched config.m4 to exclude pcre2_jit_compile.c"
+          echo "Patched config0.m4 to exclude pcre2_jit_compile.c"
 
       - name: Clean previous build and force regenerate configure
         run: |
