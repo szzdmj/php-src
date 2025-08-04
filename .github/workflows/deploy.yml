@@ -38,39 +38,22 @@ jobs:
           echo "ONIG_LIBS=$(pwd)/build/libonig.a" >> $GITHUB_ENV
           cd ..
 
-      # 保险：彻底屏蔽 OPCache
       - name: Disable OPCache in PHP source
         run: |
           mv ext/opcache/config.m4 ext/opcache/config.m4.bak
           touch ext/opcache/config.m4
 
-      # 保险：彻底屏蔽 PCRE2 JIT
-      - name: Disable PCRE2 JIT in PHP source
-        run: |
-          sed -i '/JIT/d' ext/pcre/config0.m4 || true
-          sed -i '/JIT/d' ext/pcre/pcre2lib/pcre2_jit_compile.c || true
-
-      # 清理并生成 configure 脚本
       - name: Clean previous build and regenerate configuration
         run: |
+          cd $GITHUB_WORKSPACE   # 或 cd 到你的源码根目录
           source emsdk/emsdk_env.sh
           make distclean || true
           ./buildconf --force
+          ls -l  # 检查有 configure 文件
 
-      # 保险：再次屏蔽 OPCache 和 PCRE2 JIT（防止 buildconf 恢复）
-      - name: Ensure OPCache and PCRE2 JIT stay disabled
-        run: |
-          mv ext/opcache/config.m4 ext/opcache/config.m4.bak
-          touch ext/opcache/config.m4
-          sed -i '/JIT/d' ext/pcre/config0.m4 || true
-          sed -i '/JIT/d' ext/pcre/pcre2lib/pcre2_jit_compile.c || true
-
-      # 配置 PHP 编译选项
       - name: Configure PHP for Emscripten WASM build
-        env:
-          ONIG_CFLAGS: ${{ env.ONIG_CFLAGS }}
-          ONIG_LIBS: ${{ env.ONIG_LIBS }}
         run: |
+          cd $GITHUB_WORKSPACE   # 确保在源码根目录
           source emsdk/emsdk_env.sh
           emconfigure ./configure \
             --host=wasm32-unknown-emscripten \
