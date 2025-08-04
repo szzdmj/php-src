@@ -32,19 +32,20 @@ jobs:
           emmake make -C build
           echo "ONIG_CFLAGS=-I$(pwd)/src" >> $GITHUB_ENV
           echo "ONIG_LIBS=$(pwd)/build/libonig.a" >> $GITHUB_ENV
+          echo "ONIG_PATH=$(pwd)" >> $GITHUB_ENV
           cd ..
+
+      - name: Patch to Disable PCRE JIT at compile time
+        run: |
+          echo '#undef HAVE_PCRE_JIT_SUPPORT' >> ext/pcre/php_pcre.c
+          echo '#define PCRE2_DISABLE_JIT 1' >> ext/pcre/php_pcre.c
 
       - name: Disable OPCache in PHP source
         run: |
           mv ext/opcache/config.m4 ext/opcache/config.m4.bak
           touch ext/opcache/config.m4
-      - name: Patch PCRE config.m4 to exclude pcre2_jit_compile.c
-        run: |
-          sed -i '/pcre2_jit_compile.c/d' ext/pcre/config0.m4 || true
-          sed -i '/pcre2_jit_compile.c/d' ext/pcre/config.w32 || true
-          echo "Patched config.m4 to exclude pcre2_jit_compile.c"
 
-      - name: Clean previous build and force regenerate configure
+      - name: Clean previous build and regenerate configuration
         run: |
           cd $GITHUB_WORKSPACE   # 或 cd 到你的源码根目录
           source emsdk/emsdk_env.sh
@@ -72,7 +73,8 @@ jobs:
             --enable-filter \
             --enable-tokenizer \
             --without-libxml \
-            --with-onig=$GITHUB_WORKSPACE/oniguruma/build > configure.log 2>&1
+            --with-onig=$ONIG_PATH \
+            > configure.log 2>&1
           cat configure.log
 
       - name: Build Optimized PHP WASM
