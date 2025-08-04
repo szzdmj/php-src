@@ -140,3 +140,4 @@ else
   PHP_ADD_BUILD_DIR([$ext_builddir/pcre2lib])
   PHP_INSTALL_HEADERS([ext/pcre], [php_pcre.h pcre2lib/])
 fi
+AC_DEFINE([PCRE2_DISABLE_JIT], [1], [Disable PCRE2 JIT])
