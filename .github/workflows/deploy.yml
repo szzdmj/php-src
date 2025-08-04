@@ -21,6 +21,7 @@ jobs:
           ./emsdk install latest
           ./emsdk activate latest
           cd ..
+          source emsdk/emsdk_env.sh
 
       - name: Clone and Build Oniguruma for Emscripten
         run: |
@@ -38,13 +39,13 @@ jobs:
           mv ext/opcache/config.m4 ext/opcache/config.m4.bak
           touch ext/opcache/config.m4
 
-      - name: Clean previous build and regenerate configuration
+      - name: Clean previous build and force regenerate configure
         run: |
           cd $GITHUB_WORKSPACE   # 或 cd 到你的源码根目录
           source emsdk/emsdk_env.sh
           make distclean || true
           ./buildconf --force
-          ls -l  # 检查有 configure 文件
+          ls -l configure  # 检查有 configure 文件
 
       - name: Remove PCRE2 JIT source files
         run: |
@@ -73,7 +74,7 @@ jobs:
         run: |
           source emsdk/emsdk_env.sh
           emmake make -j$(nproc) CFLAGS="-O3" V=1 > make.log 2>&1 || true
-          emmake make -j$(nproc) CFLAGS="-O3 -DPCRE2_DISABLE_JIT=1"
+          emmake make -j$(nproc) CFLAGS="-O3" V=1 > make.log 2>&1 || (cat make.log && exit 1)
 
       - name: Upload build logs (always run)
         if: always()
