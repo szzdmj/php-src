@@ -51,6 +51,12 @@ jobs:
           ./buildconf --force
           ls -l  # 检查有 configure 文件
 
+      - name: Remove PCRE2 JIT source files
+        run: |
+          rm -f ext/pcre/pcre2lib/pcre2_jit_compile.c
+          rm -rf ext/pcre/pcre2lib/sljit
+
+
       - name: Configure PHP for Emscripten WASM build
         run: |
           cd $GITHUB_WORKSPACE   # 确保在源码根目录
