@@ -14,11 +14,6 @@ jobs:
       - name: Checkout PHP repository
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake bison re2c autoconf automake libtool pkg-config wget tar
-
       - name: Setup Emscripten SDK
         run: |
           git clone https://github.com/emscripten-core/emsdk.git
