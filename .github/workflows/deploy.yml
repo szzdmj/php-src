@@ -71,12 +71,13 @@ jobs:
             --enable-filter \
             --enable-tokenizer \
             --without-libxml \
-            --disable-pcre-jit
+            --disable-pcre-jit > configure.log 2>&1
+          cat configure.log
 
       - name: Build Optimized PHP WASM
         run: |
           source emsdk/emsdk_env.sh
-          emmake make -j$(nproc) CFLAGS="-O3"
+          emmake make -j$(nproc) CFLAGS="-O3"  V=1 > make.log 2>&1 || (cat make.log && exit 1)
 
       - name: Strip debug symbols for smaller WASM
         run: |
@@ -88,4 +89,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: php.wasm
-          path: sapi/embed/php.wasm
+          path: |
+            configure.log
+            make.log
+            sapi/embed/php.wasm
+
