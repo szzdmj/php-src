@@ -332,6 +332,22 @@ static PHP_INI_MH(OnChangeMemoryLimit)
 	} else {
 		value = Z_L(1)<<30;		/* effectively, no limit */
 	}
+
+	/* If memory_limit exceeds max_memory_limit, warn and set to max_memory_limit instead. */
+	if (value > PG(max_memory_limit)) {
+		if (value != -1) {
+			zend_error(E_WARNING,
+				"Failed to set memory_limit to %zd bytes. Setting to max_memory_limit instead (currently: " ZEND_LONG_FMT " bytes)",
+				value, PG(max_memory_limit));
+		}
+
+		zend_ini_entry *max_mem_limit_ini = zend_hash_str_find_ptr(EG(ini_directives), ZEND_STRL("max_memory_limit"));
+		entry->value = zend_string_copy(max_mem_limit_ini->value);
+		PG(memory_limit) = PG(max_memory_limit);
+
+		return SUCCESS;
+	}
+
 	if (zend_set_memory_limit(value) == FAILURE) {
 		/* When the memory limit is reset to the original level during deactivation, we may be
 		 * using more memory than the original limit while shutdown is still in progress.
@@ -346,6 +362,26 @@ static PHP_INI_MH(OnChangeMemoryLimit)
 	return SUCCESS;
 }
 /* }}} */
+
+static PHP_INI_MH(OnChangeMaxMemoryLimit)
+{
+	size_t value;
+	if (new_value) {
+		value = zend_ini_parse_uquantity_warn(new_value, entry->name);
+	} else {
+		value = Z_L(1) << 30; /* effectively, no limit */
+	}
+
+	if (zend_set_memory_limit(value) == FAILURE) {
+		zend_error(E_ERROR, "Failed to set memory limit to %zd bytes (Current memory usage is %zd bytes)", value, zend_memory_usage(true));
+		return FAILURE;
+	}
+
+	PG(memory_limit) = value;
+	PG(max_memory_limit) = value;
+
+	return SUCCESS;
+}
 
 /* {{{ PHP_INI_MH */
 static PHP_INI_MH(OnSetLogFilter)
@@ -810,7 +846,10 @@ PHP_INI_BEGIN()
 	STD_PHP_INI_BOOLEAN("mail.mixed_lf_and_crlf",			"0",		PHP_INI_SYSTEM|PHP_INI_PERDIR,		OnUpdateBool,			mail_mixed_lf_and_crlf,			php_core_globals,	core_globals)
 	STD_PHP_INI_ENTRY("mail.log",					NULL,		PHP_INI_SYSTEM|PHP_INI_PERDIR,		OnUpdateMailLog,			mail_log,			php_core_globals,	core_globals)
 	PHP_INI_ENTRY("browscap",					NULL,		PHP_INI_SYSTEM,		OnChangeBrowscap)
-	PHP_INI_ENTRY("memory_limit",				"128M",		PHP_INI_ALL,		OnChangeMemoryLimit)
+
+	PHP_INI_ENTRY("max_memory_limit",		"-1",		PHP_INI_SYSTEM,		OnChangeMaxMemoryLimit)
+	PHP_INI_ENTRY("memory_limit",			"128M",		PHP_INI_ALL,		OnChangeMemoryLimit)
+
 	PHP_INI_ENTRY("precision",					"14",		PHP_INI_ALL,		OnSetPrecision)
 	PHP_INI_ENTRY("sendmail_from",				NULL,		PHP_INI_ALL,		NULL)
 	PHP_INI_ENTRY("sendmail_path",	DEFAULT_SENDMAIL_PATH,	PHP_INI_SYSTEM,		NULL)
@@ -1577,24 +1616,16 @@ try_again:
 PHP_FUNCTION(set_time_limit)
 {
 	zend_long new_timeout;
-	char *new_timeout_str;
-	size_t new_timeout_strlen;
-	zend_string *key;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &new_timeout) == FAILURE) {
 		RETURN_THROWS();
 	}
 
-	new_timeout_strlen = zend_spprintf(&new_timeout_str, 0, ZEND_LONG_FMT, new_timeout);
-
-	key = ZSTR_INIT_LITERAL("max_execution_time", 0);
-	if (zend_alter_ini_entry_chars_ex(key, new_timeout_str, new_timeout_strlen, PHP_INI_USER, PHP_INI_STAGE_RUNTIME, 0) == SUCCESS) {
-		RETVAL_TRUE;
-	} else {
-		RETVAL_FALSE;
-	}
-	zend_string_release_ex(key, 0);
-	efree(new_timeout_str);
+	zend_string *time = zend_long_to_str(new_timeout);
+	zend_string *key = ZSTR_INIT_LITERAL("max_execution_time", false);
+	RETVAL_BOOL(zend_alter_ini_entry_ex(key, time, PHP_INI_USER, PHP_INI_STAGE_RUNTIME, false) == SUCCESS);
+	zend_string_release_ex(key, false);
+	zend_string_release_ex(time, false);
 }
 /* }}} */
 
@@ -2242,9 +2273,7 @@ zend_result php_module_startup(sapi_module_struct *sf, zend_module_entry *additi
 	   load zend extensions and register php function extensions
 	   to be loaded later */
 	zend_stream_init();
-	if (php_init_config() == FAILURE) {
-		return FAILURE;
-	}
+	php_init_config();
 	zend_stream_shutdown();
 
 	/* Register PHP core ini entries */
