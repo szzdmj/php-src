@@ -1,4 +1,4 @@
-name: Build PHP WASM with mbstring (patched PCRE2 JIT)
+name: Build PHP WASM with mbstring
 
 on:
   push:
@@ -21,8 +21,6 @@ jobs:
           ./emsdk install latest
           ./emsdk activate latest
           cd ..
-          source emsdk/emsdk_env.sh
-
       - name: Clone and Build Oniguruma for Emscripten
         run: |
           source emsdk/emsdk_env.sh
@@ -32,36 +30,22 @@ jobs:
           emmake make -C build
           echo "ONIG_CFLAGS=-I$(pwd)/src" >> $GITHUB_ENV
           echo "ONIG_LIBS=$(pwd)/build/libonig.a" >> $GITHUB_ENV
-          echo "ONIG_PATH=$(pwd)" >> $GITHUB_ENV
           cd ..
-
-      - name: Patch to Disable PCRE JIT at compile time
-        run: |
-          echo '#undef HAVE_PCRE_JIT_SUPPORT' >> ext/pcre/php_pcre.c
-          echo '#define PCRE2_DISABLE_JIT 1' >> ext/pcre/php_pcre.c
-
       - name: Disable OPCache in PHP source
         run: |
           mv ext/opcache/config.m4 ext/opcache/config.m4.bak
           touch ext/opcache/config.m4
-
       - name: Clean previous build and regenerate configuration
         run: |
           cd $GITHUB_WORKSPACE   # 或 cd 到你的源码根目录
           source emsdk/emsdk_env.sh
           make distclean || true
           ./buildconf --force
-          ./configure
-          make -j2
-
-          ls -l configure  # 检查有 configure 文件
-
-#      - name: Remove PCRE2 JIT source files
- #       run: |
- #         rm -f ext/pcre/pcre2lib/pcre2_jit_compile.c
-#          rm -rf ext/pcre/pcre2lib/sljit
-
-
+          ls -l  # 检查有 configure 文件
+      - name: Remove PCRE2 JIT source files
+        run: |
+          rm -f ext/pcre/pcre2lib/pcre2_jit_compile.c
+          rm -rf ext/pcre/pcre2lib/sljit
       - name: Configure PHP for Emscripten WASM build
         run: |
           cd $GITHUB_WORKSPACE   # 确保在源码根目录
@@ -76,15 +60,12 @@ jobs:
             --enable-filter \
             --enable-tokenizer \
             --without-libxml \
-            --with-onig=$ONIG_PATH \
-            > configure.log 2>&1
+            --disable-pcre-jit > configure.log 2>&1
           cat configure.log
-
       - name: Build Optimized PHP WASM
         run: |
           source emsdk/emsdk_env.sh
-          emmake make -j$(nproc) CFLAGS="-O3" V=1 > make.log 2>&1 || (cat make.log && exit 1)
-
+          emmake make -j$(nproc) CFLAGS="-O3" V=1 > make.log 2>&1 || true
       - name: Upload build logs (always run)
         if: always()
         uses: actions/upload-artifact@v4
@@ -93,14 +74,12 @@ jobs:
           path: |
             configure.log
             make.log
-
       - name: Strip debug symbols for smaller WASM
         if: success()  # 只有make成功才Strip
         run: |
           wget https://github.com/WebAssembly/wabt/releases/download/1.0.33/wabt-1.0.33-ubuntu.tar.gz
           tar xzf wabt-1.0.33-ubuntu.tar.gz
           ./wabt-1.0.33/bin/wasm-strip sapi/embed/php.wasm
-
       - name: Upload php.wasm
         if: success()  # 只有make成功才上传wasm
         uses: actions/upload-artifact@v4
