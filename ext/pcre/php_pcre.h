@@ -13,6 +13,10 @@
    | Author: Andrei Zmievski <andrei@php.net>                             |
    +----------------------------------------------------------------------+
  */
+#ifndef PCRE2_CODE_UNIT_WIDTH
+#define PCRE2_CODE_UNIT_WIDTH 8
+#endif
+#include "pcre2.h"
 
 #ifndef PHP_PCRE_H
 #define PHP_PCRE_H
