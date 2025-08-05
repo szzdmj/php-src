@@ -40,7 +40,7 @@ jobs:
           cd $GITHUB_WORKSPACE   # 或 cd 到你的源码根目录
           source emsdk/emsdk_env.sh
           make distclean || true
-    make clean || true
+          make clean || true
           ./buildconf --force
           ls -l  # 检查有 configure 文件
    #   - name: Remove PCRE2 JIT source files
