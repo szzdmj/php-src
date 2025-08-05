@@ -52,7 +52,7 @@ jobs:
           make distclean || true
           ./buildconf --force
           ./configure
-　　　　　　make -j2
+          make -j2
 
           ls -l configure  # 检查有 configure 文件
 
