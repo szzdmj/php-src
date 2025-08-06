@@ -21,48 +21,31 @@ jobs:
           ./emsdk install latest
           ./emsdk activate latest
           cd ..
-      - name: Clone and Build Oniguruma for Emscripten
+
+      - name: Patch ext/pcre/config.m4 for static build
         run: |
-          source emsdk/emsdk_env.sh
-          git clone https://github.com/kkos/oniguruma.git
-          cd oniguruma
-          emcmake cmake -Bbuild
-          emmake make -C build
-          echo "ONIG_CFLAGS=-I$(pwd)/src" >> $GITHUB_ENV
-          echo "ONIG_LIBS=$(pwd)/build/libonig.a" >> $GITHUB_ENV
-          cd ..
+          cp ext/pcre/config0.m4 ext/pcre/config.m4
+          echo 'AC_MSG_NOTICE([CUSTOM PCRE CONFIG.M4 LOADED])' >> ext/pcre/config.m4
+
+      - name: Remove PCRE2 JIT files to prevent JIT build
+        run: |
+          rm -f ext/pcre/pcre2lib/pcre2_jit_compile.c
+          rm -rf ext/pcre/pcre2lib/sljit
+
       - name: Disable OPCache in PHP source
         run: |
           mv ext/opcache/config.m4 ext/opcache/config.m4.bak
           touch ext/opcache/config.m4
-      - name: Patch ext/pcre/config0.m4 to force static build
-        run: |
-          echo 'PHP_NEW_EXTENSION(pcre, php_pcre.c, yes)' > ext/pcre/config0.m4
 
       - name: Clean previous build and regenerate configuration
         run: |
           cd $GITHUB_WORKSPACE   # 或 cd 到你的源码根目录
           source emsdk/emsdk_env.sh
-          rm -rf autom4te.cache
           make distclean || true
           make clean || true
           ./buildconf --force
-          ls -l configure # 检查有 configure 文件
-      - name: Remove PCRE2 JIT source files
-        run: |
-          # Remove JIT source files to prevent them from being compiled
-          rm -f ext/pcre/pcre2lib/pcre2_jit_compile.c
-          rm -rf ext/pcre/pcre2lib/sljit
 
-          # Patch ext/pcre/config.m4 to force built-in static compilation
-          sed -i '/PHP_NEW_EXTENSION(pcre/,/)/s/,$/, yes/' ext/pcre/config0.m4
-
-          sed -i 's/,$/, yes/' ext/pcre/config.m4
-
-          # Disable PCRE JIT in php_pcre.c to avoid runtime dependency
-          echo '#undef HAVE_PCRE_JIT_SUPPORT' >> ext/pcre/php_pcre.c
-          echo '#define PCRE2_DISABLE_JIT 1' >> ext/pcre/php_pcre.c
-      - name: Configure PHP for Emscripten WASM build
+      - name: Configure PHP for Emscripten WASM build (with static PCRE)
         run: |
           cd $GITHUB_WORKSPACE   # 确保在源码根目录
           source emsdk/emsdk_env.sh
@@ -72,6 +55,7 @@ jobs:
             --disable-cli \
             --enable-embed=static \
             --enable-pcre \
+            --enable-embed=static \
             --enable-mbstring \
             --enable-session \
             --enable-filter \
