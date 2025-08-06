@@ -1,4 +1,4 @@
-name: Build PHP WASM with mbstring
+name: Build PHP WASM with Static PCRE
 
 on:
   push:
@@ -33,14 +33,23 @@ jobs:
           echo "ONIG_LIBS=$(pwd)/build/libonig.a" >> $GITHUB_ENV
           cd ..
 
-      - name: Patch ext/pcre/config.m4 for static build
+      - name: Disable OPCache in PHP source
         run: |
-          cd $GITHUB_WORKSPACE
-          rm -f configure aclocal.m4 libtool main/php_config.h.in config.status config.cache config.nice
-          find . -name 'Makefile' -delete
-          find . -name 'Makefile.in' -delete
+          mv ext/opcache/config.m4 ext/opcache/config.m4.bak
+          touch ext/opcache/config.m4
+
+      - name: Patch PCRE to force static build
+        run: |
+          sed -i '/PHP_NEW_EXTENSION(pcre/d' ext/pcre/config.m4
+          echo 'PHP_NEW_EXTENSION(pcre, php_pcre.c, yes)' >> ext/pcre/config.m4
+          echo 'PHP_SUBST(pcre_SHARED_LIBADD)' >> ext/pcre/config.m4
+
+      - name: Clean previous build and regenerate configuration
+        run: |
+          source emsdk/emsdk_env.sh
           make distclean || true
           ./buildconf --force
+          ls -l  # 确保 configure 文件存在
 
       - name: Configure PHP for Emscripten WASM build (with static PCRE)
         run: |
@@ -62,6 +71,11 @@ jobs:
             ONIG_CFLAGS="$ONIG_CFLAGS" \
             ONIG_LIBS="$ONIG_LIBS" > configure.log 2>&1
           cat configure.log
+
+      - name: Fix Makefile to force static PCRE link
+        run: |
+          find . -name "Makefile*" | xargs sed -i 's/pcre.la/pcre.a/g'
+
       - name: Build Optimized PHP WASM
         run: |
           source emsdk/emsdk_env.sh
