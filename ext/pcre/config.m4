@@ -5,7 +5,7 @@ if test "$PHP_PCRE" != "no"; then
   PHP_NEW_EXTENSION(pcre, php_pcre.c, yes)
   PHP_ADD_BUILD_DIR(ext/pcre/pcre2lib, 1)
 
-  dnl Explicitly exclude JIT sources to avoid build issues with wasm32
+  dnl Explicitly include PCRE2 sources, but exclude JIT
   PCRE2_SOURCES="
     pcre2lib/pcre2_auto_possess.c
     pcre2lib/pcre2_compile.c
