@@ -2,10 +2,10 @@ PHP_ARG_ENABLE(pcre, whether to enable PCRE support,
 [  --enable-pcre           Enable PCRE support], yes)
 
 if test "$PHP_PCRE" != "no"; then
-  PHP_NEW_EXTENSION(pcre, php_pcre.c, yes)
+  PHP_NEW_EXTENSION(pcre, php_pcre.c, no)
   PHP_ADD_BUILD_DIR(ext/pcre/pcre2lib, 1)
 
-  dnl Explicitly include PCRE2 sources, but exclude JIT
+  dnl Explicitly include PCRE2 sources, exclude JIT
   PCRE2_SOURCES="
     pcre2lib/pcre2_auto_possess.c
     pcre2lib/pcre2_compile.c
