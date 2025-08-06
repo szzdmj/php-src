@@ -50,7 +50,8 @@ jobs:
           rm -rf ext/pcre/pcre2lib/sljit
 
           # Patch ext/pcre/config.m4 to force built-in static compilation
-          sed -i '/PHP_NEW_EXTENSION(pcre/s/,$/, yes/' ext/pcre/config.m4
+          sed -i '/PHP_NEW_EXTENSION(pcre/,/)/s/,$/, yes/' ext/pcre/config0.m4
+
           sed -i 's/,$/, yes/' ext/pcre/config.m4
 
           # Disable PCRE JIT in php_pcre.c to avoid runtime dependency
