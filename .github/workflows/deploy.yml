@@ -36,27 +36,10 @@ jobs:
       - name: Patch ext/pcre/config.m4 for static build
         run: |
           cd $GITHUB_WORKSPACE
-          rm -f configure aclocal.m4 configure.scan libtool main/php_config.h.in Makefile.global config.nice
+          rm -f configure aclocal.m4 libtool main/php_config.h.in config.status config.cache config.nice
           find . -name 'Makefile' -delete
           find . -name 'Makefile.in' -delete
-          find . -name 'config.status' -delete
           make distclean || true
-      - name: Remove PCRE2 JIT files to prevent JIT build
-        run: |
-          rm -f ext/pcre/pcre2lib/pcre2_jit_compile.c
-          rm -rf ext/pcre/pcre2lib/sljit
-
-      - name: Disable OPCache in PHP source
-        run: |
-          mv ext/opcache/config.m4 ext/opcache/config.m4.bak
-          touch ext/opcache/config.m4
-
-      - name: Clean previous build and regenerate configuration
-        run: |
-          cd $GITHUB_WORKSPACE   # 或 cd 到你的源码根目录
-          source emsdk/emsdk_env.sh
-          make distclean || true
-          make clean || true
           ./buildconf --force
 
       - name: Configure PHP for Emscripten WASM build (with static PCRE)
@@ -73,7 +56,10 @@ jobs:
             --enable-session \
             --enable-filter \
             --enable-tokenizer \
-            --without-libxml > configure.log 2>&1
+            --without-libxml \
+            PKG_CONFIG_PATH=/dev/null \
+            ONIG_CFLAGS="$ONIG_CFLAGS" \
+            ONIG_LIBS="$ONIG_LIBS" > configure.log 2>&1
           cat configure.log
       - name: Build Optimized PHP WASM
         run: |
