@@ -57,6 +57,7 @@ jobs:
             --enable-filter \
             --enable-tokenizer \
             --without-libxml \
+      --disable-opcache \
             PKG_CONFIG_PATH=/dev/null \
             ONIG_CFLAGS="$ONIG_CFLAGS" \
             ONIG_LIBS="$ONIG_LIBS" > configure.log 2>&1
