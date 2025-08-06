@@ -50,8 +50,8 @@ jobs:
             --host=wasm32-unknown-emscripten \
             --disable-all \
             --disable-cli \
-            --enable-pcre \
             --enable-embed=static \
+            --enable-pcre=static \
             --enable-mbstring \
             --enable-session \
             --enable-filter \
