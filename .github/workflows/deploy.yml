@@ -24,7 +24,6 @@ jobs:
 
       - name: Patch ext/pcre/config.m4 for static build
         run: |
-          cp ext/pcre/config0.m4 ext/pcre/config.m4
           echo 'AC_MSG_NOTICE([CUSTOM PCRE CONFIG.M4 LOADED])' >> ext/pcre/config.m4
 
       - name: Remove PCRE2 JIT files to prevent JIT build
