@@ -33,8 +33,8 @@ jobs:
           cd ..
       - name: Disable OPCache in PHP source
         run: |
-          mv ext/opcache/config.m4 ext/opcache/config.m4.bak
-          touch ext/opcache/config.m4
+          mv ext/opcache/config0.m4 ext/opcache/config0.m4.bak
+          touch ext/opcache/config0.m4
       - name: Clean previous build and regenerate configuration
         run: |
           cd $GITHUB_WORKSPACE   # 或 cd 到你的源码根目录
@@ -49,10 +49,10 @@ jobs:
           rm -f ext/pcre/pcre2lib/pcre2_jit_compile.c
           rm -rf ext/pcre/pcre2lib/sljit
 
-          # Patch ext/pcre/config.m4 to force built-in static compilation
+          # Patch ext/pcre/config0.m4 to force built-in static compilation
           sed -i '/PHP_NEW_EXTENSION(pcre/,/)/s/,$/, yes/' ext/pcre/config0.m4
 
-          sed -i 's/,$/, yes/' ext/pcre/config.m4
+          sed -i 's/,$/, yes/' ext/pcre/config0.m4
 
           # Disable PCRE JIT in php_pcre.c to avoid runtime dependency
           echo '#undef HAVE_PCRE_JIT_SUPPORT' >> ext/pcre/php_pcre.c
