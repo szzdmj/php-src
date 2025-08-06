@@ -35,8 +35,12 @@ jobs:
 
       - name: Patch ext/pcre/config.m4 for static build
         run: |
-          echo 'AC_MSG_NOTICE([CUSTOM PCRE CONFIG.M4 LOADED])' >> ext/pcre/config.m4
-
+          cd $GITHUB_WORKSPACE
+          rm -f configure aclocal.m4 configure.scan libtool main/php_config.h.in Makefile.global config.nice
+          find . -name 'Makefile' -delete
+          find . -name 'Makefile.in' -delete
+          find . -name 'config.status' -delete
+          make distclean || true
       - name: Remove PCRE2 JIT files to prevent JIT build
         run: |
           rm -f ext/pcre/pcre2lib/pcre2_jit_compile.c
