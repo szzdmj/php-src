@@ -35,7 +35,6 @@ jobs:
 
       - name: Disable OPCache in PHP source
         run: |
-          mv ext/opcache/config.m4 ext/opcache/config.m4.bak
           touch ext/opcache/config.m4
 
       - name: Patch PCRE to force static build
