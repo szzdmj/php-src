@@ -96,16 +96,12 @@ jobs:
             PHP_ADD_SOURCES(pcre, $PCRE2_SOURCES)
           fi
           EOF
-      - name: Apply patch to force PCRE static build
-        run: |
-          patch -p1 < patches/pcre_static.patch
 
-      - name: Clean previous build and regenerate configuration
-        run: |
-          source ./emsdk/emsdk_env.sh
-          make distclean || true
-          ./buildconf --force
-          ls -l  # 确保 configure 文件存在
+      - name: Apply patch
+        run: patch -p1 < patches/pcre_static.patch
+
+      - name: Run buildconf
+        run: ./buildconf --force
 
       - name: Configure PHP for Emscripten WASM build (with static PCRE)
         run: |
@@ -123,8 +119,8 @@ jobs:
             --without-libxml \
             --disable-opcache \
             PKG_CONFIG_PATH=/dev/null \
-            ONIG_CFLAGS="-I$(pwd)/oniguruma/src" \
-            ONIG_LIBS="$(pwd)/oniguruma/build/libonig.a" > configure.log 2>&1
+            ONIG_CFLAGS="$ONIG_CFLAGS" \
+            ONIG_LIBS="$ONIG_LIBS" > configure.log 2>&1
           cat configure.log
 
       - name: Fix Makefile to force static PCRE link
@@ -141,6 +137,7 @@ jobs:
         with:
           name: build-logs
           path: |
+            config.log
             configure.log
             make.log
       - name: Strip debug symbols for smaller WASM
