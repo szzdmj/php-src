@@ -24,7 +24,7 @@ jobs:
 
       - name: Clone and Build Oniguruma for Emscripten
         run: |
-          source emsdk/emsdk_env.sh
+          source ./emsdk/emsdk_env.sh
           git clone https://github.com/kkos/oniguruma.git
           cd oniguruma
           emcmake cmake -Bbuild
@@ -86,21 +86,20 @@ jobs:
 
       - name: Clean previous build and regenerate configuration
         run: |
-          source emsdk/emsdk_env.sh
+          source ./emsdk/emsdk_env.sh
           make distclean || true
           ./buildconf --force
           ls -l  # 确保 configure 文件存在
 
       - name: Configure PHP for Emscripten WASM build (with static PCRE)
         run: |
-          cd $GITHUB_WORKSPACE   # 确保在源码根目录
-          source emsdk/emsdk_env.sh
+          source ./emsdk/emsdk_env.sh
           emconfigure ./configure \
             --host=wasm32-unknown-emscripten \
             --disable-all \
             --disable-cli \
             --enable-embed=static \
-            --enable-pcre=static \
+            --enable-pcre \
             --enable-mbstring \
             --enable-session \
             --enable-filter \
@@ -118,7 +117,7 @@ jobs:
 
       - name: Build Optimized PHP WASM
         run: |
-          source emsdk/emsdk_env.sh
+          source ./emsdk/emsdk_env.sh
           emmake make -j$(nproc) CFLAGS="-O3" V=1 > make.log 2>&1 || true
       - name: Upload build logs (always run)
         if: always()
