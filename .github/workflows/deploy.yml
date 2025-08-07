@@ -14,12 +14,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Emscripten SDK
+        shell: bash
         run: |
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
           ./emsdk install latest
           ./emsdk activate latest
-          echo "source $(pwd)/emsdk_env.sh" >> $GITHUB_ENV
+          source ./emsdk_env.sh
+          emcc -v   # 测试 Emscripten 是否可用
           cd ..
 
       - name: Clone and Build Oniguruma for Emscripten
