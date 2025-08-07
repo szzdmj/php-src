@@ -97,9 +97,6 @@ jobs:
           fi
           EOF
 
-      - name: Apply patch
-        run: patch -p1 < patches/pcre_static.patch
-
       - name: Run buildconf
         run: ./buildconf --force
 
