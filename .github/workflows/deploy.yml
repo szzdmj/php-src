@@ -101,7 +101,7 @@ jobs:
             --disable-all \
             --disable-cli \
             --enable-embed=static \
-            --enable-pcre \
+            --enable-pcre=static \
             --enable-mbstring \
             --enable-session \
             --enable-filter \
