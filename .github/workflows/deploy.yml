@@ -45,15 +45,26 @@ jobs:
 
       - name: Patch PCRE to force static build
         run: |
-          cat > ext/pcre/config.m4 <<'EOF'
+          mkdir -p patches
+          cat > patches/pcre_static.patch <<'EOF'
+--- a/ext/pcre/config.m4
++++ b/ext/pcre/config.m4
+@@
           PHP_ARG_ENABLE(pcre, whether to enable PCRE support,
           [  --enable-pcre           Enable PCRE support], yes)
 
           if test "$PHP_PCRE" != "no"; then
-            PHP_NEW_EXTENSION(pcre, php_pcre.c, yes)
+-  PHP_NEW_EXTENSION(pcre, php_pcre.c, $ext_shared)
++  PHP_NEW_EXTENSION(pcre, php_pcre.c, yes)
             PHP_ADD_BUILD_DIR(ext/pcre/pcre2lib, 1)
-            PHP_ADD_INCLUDE(ext/pcre/pcre2lib)
-
++  PHP_ADD_INCLUDE(ext/pcre/pcre2lib)
++
++  dnl Prevent dynamic linkage and JIT issues
++  AC_DEFINE(PCRE2_STATIC, 1, [Statically link PCRE2])
++  AC_DEFINE(PCRE2_DISABLE_JIT, 1, [Disable PCRE2 JIT])
++
++  dnl Patch PCRE to exclude JIT sources
++  PHP_SUBST_OLD(PCRE2_SOURCES)
             PCRE2_SOURCES="
               pcre2lib/pcre2_auto_possess.c
               pcre2lib/pcre2_compile.c
