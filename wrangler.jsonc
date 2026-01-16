@@ -16,5 +16,5 @@
     "logs": {
       "enabled": true
     }
-  }
+  },"name": "php-src-workers"
 }
